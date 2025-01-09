@@ -1,0 +1,91 @@
+scriptcompose_async:
+  meta:
+    discription: "Compose a comic strip with the given elements"
+    memory: "default"
+  data: Null
+  callback: 
+    split_story:
+      args: 
+        parsed_reply: ${scriptcompose.steps[2].meta.value_parsed}
+      output:
+        reply_callback: Null
+      func: |
+        parsed_reply = ${.args.parsed_reply}
+        reply_callback = []
+        for index in range(len(parsed_reply)-2):
+          parsed = parsed_reply[index:index+3]
+          reply_callback.append({"outline": "\n".join(parsed), "target": parsed_reply[index+1]})
+    generate_script:
+      args:
+        parsed_reply: ${scriptcompose.steps[3].meta.value_parsed}
+        table_head: Null
+      output:
+        reply_callback: Null
+      func: |
+        parsed_reply = ${.args.parsed_reply}
+        reply_callback = table_head = "\n".join(parsed_reply[0].split("\n")[:2]) + "\n"
+        for parsed in parsed_reply:
+          reply_callback += parsed.replace(table_head, "") + "\n"
+  steps:
+    - name: "comic.elements_complete"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: False
+      callback: Null
+      discription: "对给定信息进行漫画要素补全"
+    - name: "comic.refine_story"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: False
+      callback: Null
+      discription: "对补全后的漫画故事进行优化"
+    - name: "comic.split_story"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: False
+      callback: "${scriptcompose.callback.split_story}"
+      discription: "对优化后的故事进行拆分"
+    - name: "comic.generate_script"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: True
+      callback: "${scriptcompose.callback.generate_script}"
+      discription: "对拆分后的故事进行脚本生成"
+# -----------------
+scriptcompose_auto:
+  meta:
+    discription: "漫画脚本创作流程"
+    memory: "default"
+  steps:
+    - name: "comic.elements_complete"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: False
+      callback: Null
+      discription: "对给定信息进行漫画要素补全"
+    - name: "comic.split_story"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: False
+      callback: Null
+      discription: "对优化后的故事进行拆分"
+    - name: "comic.generate_script"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: False
+      callback: Null
+      discription: "对拆分后的故事进行脚本生成"
+    - name: "comic.prepare_scene"
+      meta: Null
+      add_to_memory: false
+      agent: null
+      concurrent: False
+      callback: Null
+      discription: "对漫画脚本进行 3D 场景规划"

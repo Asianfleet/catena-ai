@@ -1,0 +1,7 @@
+database:
+  host: localhost
+  p: 
+  u: 12
+  l:
+    - port: "${database.p}" 
+      user: 111 
