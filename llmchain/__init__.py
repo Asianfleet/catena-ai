@@ -1,8 +1,8 @@
-from .memory import InfMemory, init_memory
-from .models import OpenAIC, Qwen, QianFan, init_model
-from .parser import LLMOutputParser
-from .prompt import LLMPrompt
-from ..catena_core.utils import PromptRole
+from .memory.memory import InfMemory, init_memory
+from .model.models import OpenAIC, Qwen, QianFan, init_model
+from .parser.parser import LLMOutputParser
+from .prompt.prompt import LLMPrompt
+from catena_core.utils.utils import PromptRole
 
 
 

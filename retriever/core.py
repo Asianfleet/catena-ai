@@ -1,11 +1,12 @@
 import sqlite3
 from typing import Union, Literal, Union, Optional, List, Dict, Any
 from pydantic import BaseModel, Field
-from omegaconf import OmegaConf, DictConfig
+from catenaconf import Catenaconf
 
-from src.paths import llmconf as LF
-from src.utils.util import Tools
-from src.modules.catena.core import Node, RTConfig
+from paths import llmconf as LF
+from catena_core.utils.format_builtin import delete_list_format
+from catena_core.nodes import Node
+from catena_core.settings import RTConfig
 
 
 import logging
@@ -83,7 +84,7 @@ class VectorRetriever:
 
     def parse(self, results: List[str], seperator: str = None):
         if seperator:
-            return Tools.delete_list_format(results, self.filter.seperator)
+            return delete_list_format(results, self.filter.seperator)
         else:
             return results
 

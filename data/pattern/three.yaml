@@ -1,6 +1,0 @@
-scene_extraction:
-  meta:
-    discription: "scene extraction"
-    memory: "default"
-  steps:
-    - name: "scene extraction"

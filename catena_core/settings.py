@@ -2,29 +2,27 @@ from __future__ import annotations
 import os
 import copy
 import threading
+from typing import Union
 from copy import deepcopy
-from omegaconf import OmegaConf, DictConfig
+from catenaconf import Catenaconf, KvConfig
 from dataclasses import dataclass
 from contextlib import contextmanager
-
-from .catenaconf import Catenaconf
-
     
 # 默认配置
-DEFAULT_CONFIG = OmegaConf.create({           
+DEFAULT_CONFIG = Catenaconf.create({           
     "concurrecy_limit": 10,          # 并发限制
 })
 
-PROMPT_CONFIG = OmegaConf.create({
+PROMPT_CONFIG = Catenaconf.create({
     "image_concat_direction": None,  # 图片拼接方向（UD-上下；LR-左右；为空则不进行拼接）
 })
 
-LM_CONFIG = OmegaConf.create({
+LM_CONFIG = Catenaconf.create({
     "model_name": "",
     "enable_lm_refinement": False,   # 是否启用提示词优化
 })     
 
-LLM_CONFIG = OmegaConf.create({
+LLM_CONFIG = Catenaconf.create({
     #           平台设置           
     ""                                          # "https://api.agicto.cn/v1"
     "thirdparty_url": os.getenv("TP_URL"),      # 第三方平台 URL
@@ -37,17 +35,17 @@ LLM_CONFIG = OmegaConf.create({
     
 })
 
-DEBUG_CONFIG = OmegaConf.create({
+DEBUG_CONFIG = Catenaconf.create({
     "enable_chain_visualize": True,     # 可视化管道内部过程
     "enable_func_level_debug": False,   # 输出函数级别的调试信息
     "enable_func_level_info": True      # 输出函数级别的信息
 })
 
-VISUALIZE_CONFIG = OmegaConf.create({
+VISUALIZE_CONFIG = Catenaconf.create({
     "visualize_type": "tree"
 })
 
-STYLE_CONFIG = OmegaConf.create({
+STYLE_CONFIG = Catenaconf.create({
     "chain_start": "[bold green]",
     "chain_end": "[bold gray]",
     "chain_spacer": "▬",
@@ -55,7 +53,7 @@ STYLE_CONFIG = OmegaConf.create({
     "completion_mark": "-"
 })
 
-AGENT_CONFIG = OmegaConf.create({
+AGENT_CONFIG = Catenaconf.create({
     "agent_type": "patterned",
     "pattern": "default",
     "enable_agent_visualize": True,
@@ -82,7 +80,7 @@ class BaseSettings:
             cls._instance.stack_by_thread = {}
             cls._instance.stack_by_thread[threading.get_ident()] = cls._instance.main_stack
 
-            # 使用 OmegaConf 创建配置
+            # 使用 Catenaconf 创建配置
             DEFAULT_CONFIG = CONFIG or cls._DEFAULT_CONFIG
             cls._instance.__append(deepcopy(DEFAULT_CONFIG))
 
@@ -97,19 +95,19 @@ class BaseSettings:
         thread_id = threading.get_ident()
         if thread_id not in self.stack_by_thread:
             main_stack_copy = deepcopy(self.main_stack[-1])
-            self.stack_by_thread[thread_id] = [OmegaConf.create(main_stack_copy)]
+            self.stack_by_thread[thread_id] = [Catenaconf.create(main_stack_copy)]
         return self.stack_by_thread[thread_id][-1]
 
     def __getattr__(self, name):
         if name in self.config:
-            return OmegaConf.select(self.config, name)
+            return Catenaconf.select(self.config, name)
 
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def __append(self, config):
         thread_id = threading.get_ident()
         if thread_id not in self.stack_by_thread:
-            self.stack_by_thread[thread_id] = [OmegaConf.create(self.main_stack[-1])]
+            self.stack_by_thread[thread_id] = [Catenaconf.create(self.main_stack[-1])]
         self.stack_by_thread[thread_id].append(config)
 
     def __pop(self):
@@ -124,9 +122,9 @@ class BaseSettings:
             inherit_config (bool, optional): Set configurations for the given, and use existing configurations for the rest. Defaults to True.
         """
         if inherit_config:
-            config = OmegaConf.merge(self.config, OmegaConf.create(kwargs))
+            config = Catenaconf.merge(self.config, Catenaconf.create(kwargs))
         else:
-            config = OmegaConf.create(kwargs)
+            config = Catenaconf.create(kwargs)
 
         self.__append(config)
 
@@ -191,15 +189,15 @@ settings = Settings()
 class RTConfig:
     """ 运行时配置，用于在组件之间运行时动态传递配置 """
     def __init__(self, config: dict={}):
-        self._config = OmegaConf.create(config)
+        self._config = Catenaconf.create(config)
     
-    def __call__(self, keys: str=None, deep_copy: bool=True) -> DictConfig:
+    def __call__(self, keys: str=None, deep_copy: bool=True) -> KvConfig:
         """ 获取配置，提供键值访问以及深拷贝功能 """
         if keys:
             if not deep_copy:
-                config_return = OmegaConf.select(self._config, keys)
+                config_return = Catenaconf.select(self._config, keys)
             else:
-                config_return = copy.deepcopy(OmegaConf.select(self._config, keys))
+                config_return = copy.deepcopy(Catenaconf.select(self._config, keys))
         else:
             config_return = copy.deepcopy(self._config) if deep_copy else self._config
         return config_return
@@ -212,23 +210,23 @@ class RTConfig:
     @property
     def unwrap(self):
         """ 获取配置的字典形式 """
-        return OmegaConf.to_container(self._config)
+        return Catenaconf.to_container(self._config)
 
-    def _update(self, config: dict | "RTConfig" | DictConfig, spec: str=None):
+    def _update(self, config: Union[dict, "RTConfig", KvConfig], spec: str=None):
         if spec:
             config = config() if isinstance(config, RTConfig) else config
-            OmegaConf.update(self._config, spec, config)
+            Catenaconf.update(self._config, spec, config)
 
     def interpolate(self):
         """ 解析配置中的引用，不改变原配置  """
         config_deepcopy = copy.deepcopy(self._config)
-        OmegaConf.resolve(config_deepcopy)
+        Catenaconf.resolve(config_deepcopy)
         return config_deepcopy
         
     def _interpolate(self, deep_copy: bool=True):
         """ 解析配置中的引用，会改变原配置 """
 
-        OmegaConf.resolve(self._config)
+        Catenaconf.resolve(self._config)
         if deep_copy:
             config_return = copy.deepcopy(self._config)
         else:
@@ -236,33 +234,33 @@ class RTConfig:
    
         return config_return
     
-    def merge(self, config: dict | "RTConfig" | DictConfig, spec: str=None):
+    def merge(self, config: Union[dict, "RTConfig", KvConfig], spec: str=None):
         """ 合并配置，不改变原配置 """
        
         full_copy = self.__call__()     # 深拷贝整个配置
         part_copy = self.__call__(spec) # 深拷贝部分配置，有可能为整个配置
   
         if isinstance(config, dict):
-            part_copy = OmegaConf.merge(part_copy, OmegaConf.create(config))
+            part_copy = Catenaconf.merge(part_copy, Catenaconf.create(config))
         elif isinstance(config, RTConfig):
-            part_copy = OmegaConf.merge(part_copy, config())
+            part_copy = Catenaconf.merge(part_copy, config())
         if spec:
-            OmegaConf.update(full_copy, spec, part_copy)
+            Catenaconf.update(full_copy, spec, part_copy)
         else:
             full_copy = part_copy
   
         return full_copy
     
-    def _merge(self, config: dict | "RTConfig" | DictConfig, spec: str=None):
+    def _merge(self, config: Union[dict, "RTConfig", KvConfig], spec: str=None):
         """ 合并配置，会改变原配置 """
         part_copy = self.__call__(spec)    # 深拷贝部分配置，有可能为整个配置
         # 合并部分配置
         if isinstance(config, dict):
-            part_copy = OmegaConf.merge(part_copy, OmegaConf.create(config))
+            part_copy = Catenaconf.merge(part_copy, Catenaconf.create(config))
         else:
-            part_copy = OmegaConf.merge(part_copy, config())
+            part_copy = Catenaconf.merge(part_copy, config())
         if spec:    # 直接更新原配置
-            OmegaConf.update(self._config, spec, part_copy)
+            Catenaconf.update(self._config, spec, part_copy)
         else:
             self._config = part_copy
         
@@ -360,13 +358,13 @@ if __name__ == "__main__":
             return repr(self.config) """
 
 
-    #settings.base.configure(tt=1)
-    #print(settings.base.config)
-    #print(settings.debug.enable_func_level_info)
-    #cfg = RTConfig({"a": 1, "b": 2})
-    #print(cfg.unwrap)
-    #settings.debug.configure(enable_func_level_info=True)
-    #info("test:", "test")
+    settings.base.configure(tt=1)
+    print(settings.base.config)
+    print(settings.debug.enable_func_level_info)
+    cfg = RTConfig({"a": 1, "b": 2})
+    print(cfg.unwrap)
+    settings.debug.configure(enable_func_level_info=True)
+    info("test:", "test")
     
     """ cfg=RTConfig({"a": 1, "b": 2, "c": {"d": {"f": 5}, "e": 4}})
     cfg1 = {"g": 5, "h": 6}

@@ -88,7 +88,7 @@ class NodeCompletion:
                     prop_list.append(attr + ": " + str(value))
         return prop_list
     
-class BuiltInType(Enum):
+class NodeCompletionType(Enum):
     """ 内置节点类型 """
     # 常量定义
     LLMIP = "LLM-input"
@@ -97,7 +97,7 @@ class BuiltInType(Enum):
     PAOP = "parsed-output"
     WRAPPED = "wrapped-output"   
     
-class BuiltInID(Enum):
+class NodeType(Enum):
     """ 内置节点 ID  """
     LM = "llm"
     PM = "prompt"
@@ -173,7 +173,7 @@ class Node(ABC, metaclass=NodeMeta):
         elif statespm[0] == "Output:":  # 此时 statepm 只有两个元素
             assert isinstance(statespm[1], NodeCompletion), "Output must be a NodeCompletion object"
             completion:NodeCompletion = statespm[1] # 获取 NodeCompletion 对象
-            if completion.type == BuiltInType.LLMIP: # 输出类型是大模型输入消息的列表
+            if completion.type == NodeCompletionType.LLMIP: # 输出类型是大模型输入消息的列表
                 for msg in completion.main: # 此时 main 是一个列表     
                     if msg["role"] == "user" and isinstance(msg["content"], list):  # 包含图像信息
                         for content in msg["content"]:
@@ -181,7 +181,7 @@ class Node(ABC, metaclass=NodeMeta):
                                 url = content["image_url"]["url"]
                                 truncated_url = url[:30] + "..." + url[-10:]    # 截断图像base64编码
                                 content["image_url"]["url"] = truncated_url
-            elif completion.type == BuiltInType.LLMOP:  # 输出类型是大模型输出消息的字典
+            elif completion.type == NodeCompletionType.LLMOP:  # 输出类型是大模型输出消息的字典
                 completion.main = completion.main["content"]  # 只保留内容部分
             else:
                 pass #TODO:更多自定义逻辑
@@ -423,7 +423,7 @@ class NodeChain(Node):
         """ 调用回调函数 """
         node_output: NodeCompletion = node["Output"]
         debug("[handle_callback] node:", node["node"].type)
-        if node_output.type != BuiltInType.WRAPPED: # 若不是封装节点（见 encapsulate 函数），则需要处理回调函数
+        if node_output.type != NodeCompletionType.WRAPPED: # 若不是封装节点（见 encapsulate 函数），则需要处理回调函数
             # 获取回调函数的参数
             cb_args = node_output.callback.data
             # 获取回调函数的目标节点
@@ -600,34 +600,34 @@ def encapsulate(obj: Any) -> Node:
         # 如果对象是可调用对象（例如函数或者实现 __call__ 方法的类），创建一个 Node 实例
         debug("[encapsulate] obj is a callable object")
         class SimpleNode(Node):
-            id = BuiltInID.WP
+            id = NodeType.WP
             def operate(
                 self, input: Any, config: Optional[RTConfig] = None, *args, **kwargs
             ) -> NodeCompletion:
-                return NodeCompletion(BuiltInType.WRAPPED, obj(input, config, *args, **kwargs))
+                return NodeCompletion(NodeCompletionType.WRAPPED, obj(input, config, *args, **kwargs))
         result = SimpleNode()
     elif isinstance(obj, Dict) or isinstance(obj, str): 
         # 如果对象是字典或字符串，创建一个Node实例
         debug("[encapsulate] obj is a dict or str")
         class SimpleNode(Node):
-            id = BuiltInID.WP
+            id = NodeType.WP
             def operate(
                 input: Optional[Any] = None, config: RTConfig = None, *args, **kwargs
             ) -> NodeCompletion:
-                return NodeCompletion(BuiltInType.WRAPPED, obj)
+                return NodeCompletion(NodeCompletionType.WRAPPED, obj)
         result = SimpleNode()
     else:
         # 如果对象不是 Node 或可调用对象，直接返回一个简单的 Node 实例
         debug("[encapsulate] obj is a simple object")
         class SimpleNode(Node):
-            id = BuiltInID.WP
+            id = NodeType.WP
             def operate(
                 self, input: Any, config: Optional[RTConfig] = None, *args, **kwargs
             ) -> NodeCompletion:
                 if hasattr(obj, "operate"):  # 如果对象有 operate 方法，则调用该方法
-                    return NodeCompletion(BuiltInType.WRAPPED, obj.operate(input, config, *args, **kwargs))
+                    return NodeCompletion(NodeCompletionType.WRAPPED, obj.operate(input, config, *args, **kwargs))
                 else:
-                    return NodeCompletion(BuiltInType.WRAPPED, obj)  #  否则返回对象本身
+                    return NodeCompletion(NodeCompletionType.WRAPPED, obj)  #  否则返回对象本身
         result = SimpleNode()
     return result
     

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from abc import ABC, ABCMeta, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from typing import (
-    Any, Dict,
+    Any, Dict, List, 
     Optional, Union, Callable
 )
 
@@ -16,8 +16,11 @@ from .settings import (
     debug
 )
 from .error.chainerr import *
-from .callbacks import Callback
-from .alias import BuiltInType, BuiltInID
+from .alias.builtin import NodeCompletionType, NodeType
+from .callback.node_callbacks import (
+    Callback, 
+    NodeCallbackRegister as Register
+)
 
 
 class NodeMeta(ABCMeta):
@@ -73,21 +76,24 @@ class Node(ABC, metaclass=NodeMeta):
     """
 
     # 不能在外部更改的属性
-    _id: str = BuiltInID.UD                         # 节点ID
-    _style: str = None                              # 节点样式
+    _id: str = NodeType.UD                          # 节点ID
+    _style: Union[str, Enum] = None                 # 节点样式
     _input_type: type = Any                         # 接受的输入类型
+    _related_chain_ids: List[Enum] = []              # 关联的链的id
     _callback_register: Dict[str, callable] = {}    # 回调函数注册表
        
     # 可在外部更改的属性
-    former_node: str = None                    # 前置节点
-    latter_node: str = None                    # 后置节点
+    former_node: str = None                     # 前置节点
+    latter_node: str = None                     # 后置节点
     position: str = None                        # 节点位置
     display_input: bool = True                  # 是否显示输入数据
     Index: int = 0                              # 节点索引
     Input: Any = None                           # 输入数据
     Output: Optional[NodeCompletion] = None     # 输出数据
     
-    def __init__(self, style: str = None, signature: str = None):
+    def __init__(
+        self, style: Union[str, Enum] = None, signature: str = None
+    ):
         self._style = style or self._style
         self._signature = signature
     
@@ -105,7 +111,10 @@ class Node(ABC, metaclass=NodeMeta):
     
     @property
     def style(self):
-        return self._style
+        if isinstance(self._style, Enum):
+            return self._style.value
+        else:
+            return self._style
     
     @property
     def signature(self):
@@ -116,32 +125,15 @@ class Node(ABC, metaclass=NodeMeta):
     @property
     def callback_register(self):
         return self._callback_register
-
-    def callback(register_name):
-        def decorator(func):
-            @wraps(func)
-            def wrapper(self, main_input, *args, **kwargs):
-                if register_name in self.callback_register:
-                    raise RuntimeError("Callback name already exists")
-                else:
-                    self.callback_register[register_name] = func
-                    return func(main_input, *args, **kwargs)    # 调用被装饰的函数
-            return wrapper
-        return decorator
-
-    def run_callback(
-        self, register_name: str = None, main_input: Any=None, *args, **kwargs
-    ):
-        """ 运行指定的回调函数 """
-        if register_name:
-            if register_name in self.callback_register:
-                return self.callback_register[register_name](main_input, *args, **kwargs)
-            else:
-                raise KeyError("Callback name does not exist")
-        else:
-            if "default_callback" in self.callback_register:
-                return self.callback_register["default_callback"](main_input, *args, **kwargs)
     
+    @property
+    def related_chain_ids(self):
+        return self._related_chain_ids
+    
+    @related_chain_ids.setter
+    def related_chain_ids(self, chain_ids: List[Enum]):
+        self._related_chain_ids = chain_ids
+      
     # TODO: 将__or__和__ror__的重载功能进行替换 
     def __or__(
         self,
@@ -198,6 +190,10 @@ class Node(ABC, metaclass=NodeMeta):
     
     def __call__(self, other):
         return self.__rshift__(other)
+
+    @Register.node_callback("default")
+    def _callback(self, main_input: Any, *args, **kwargs) -> Any:
+        pass
 
     @abstractmethod
     def operate( 
@@ -262,13 +258,11 @@ class NodeChain(Node):
                 chain_middle = self.chain[1:-1]
                 for node in chain_middle:
                     node.position = "middle"
-                self.name_list = [type(node) for node in self.chain]
-                self.id_list = [node.id for node in self.chain]
-                debug("[NodeChain.compile] ", self.name_list)
-                
-                if len(self.name_list) != len(set(self.name_list)):
-                    raise ChainCompileError("Chain must have unique node types")
-                if len(self.id_list) != len(set(self.id_list)):
+                self.chain_mro = [node.__class__.mro() for node in self.chain]
+                self.chain_id = [node.id for node in self.chain]
+                debug("[NodeChain.compile] ", self.chain_mro)
+        
+                if len(self.chain_id) != len(set(self.chain_id)):
                     raise ChainCompileError("Chain must have unique node ids")
             except ChainCompileError as e:
                 e.trace()
@@ -279,39 +273,50 @@ class NodeChain(Node):
                 for idx in range(1, len(chain_middle) + 1):
                     self.chain[idx].former_node = self.chain[idx - 1].signature
                     self.chain[idx].latter_node = self.chain[idx + 1].signature
+            for node in self.chain:
+                node.related_chain_ids = self.chain_id
             
             self.compiled = True
 
     def handle_callback(self, node: Node):
-        """ 调用回调函数 """
+        """ 在一个节点运行之后调用回调函数 """
         
+        # 如果不是第一个节点，则有可能调用上一个节点的回调函数
         if node in self.chain[1:]:
             debug("[handle_callback] node:", node.type)
-            if node.Output.type != BuiltInType.WRAPPED: # 若不是封装节点（见 encapsulate 函数），则需要处理回调函数
+            # 若不是封装节点（见 encapsulate 函数），则需要处理回调函数
+            if node.Output.type != NodeCompletionType.WRAPPED: 
                 # 获取回调函数的参数
                 cb_args = node.Output.callback.data
                 # 获取回调函数的目标节点
-                if cb_args["target"]:
-                    index = self.id_list.index(cb_args["target"])
-                else:
+                if cb_args["target"]:   # 如果有该参数，则获取目标节点的索引，执行对应的回调函数
+                    index = self.chain_id.index(cb_args["target"])
+                else:   # 否则，获取上一个节点的索引，执行上一个节点的回调函数
                     index = node.Index - 1
-                # 获取目标节点
-                target_node = self.chain[index]
-                cb_result = target_node.run_callback(
-                    cb_args["name"], cb_args["main_input"], *cb_args["args"], **cb_args["kwargs"]
+                # 获取回调函数所在的节点
+                target_node: Node = self.chain[index]
+                # 执行对应的回调函数
+                debug("[handle_callback] cb_args:", cb_args)
+                cb_result = Register.run_callback(
+                    target_node, 
+                    cb_args["name"], 
+                    cb_args["main_input"], 
+                    *cb_args["args"], 
+                    **cb_args["kwargs"]
                 )
                 debug("[handle_callback] callback result:", cb_result)
-                if cb_result:   # 规定：如果回调函数返回结果，则使用回调函数的返回结果作为输出
+                # 规定：如果回调函数返回结果，则使用回调函数的返回结果作为输出
+                if cb_result:   
                     output = cb_result.main if isinstance(cb_result, NodeCompletion) else cb_result
                     display = True  # 此时下一个节点的输入就不再是上一个节点的输出，因此需要显示出来
-                else:           # 否则使用原输出
+                else:               # 否则使用原输出
                     output = node.Output.main
                     display = False # 此时下一个节点的输入就是上一个节点的输出，故不需要显示出来
                 if node != self.chain[-1]:  # 只有在不是最后一个节点时才需要设置显示输入
                     debug("[handle_callback] display:", display)
                     self.chain[node.Index + 1].display_input = display
             else:
-                output = node.Output.main   # 若为封装节点，则直接使用原输出
+                output = node.Output.main   # 若为封装节点，则直接使用原输出，不存在回调函数的情况
             return output
         return node.Output.main
 
@@ -420,33 +425,33 @@ def encapsulate(obj: Any) -> Node:
         # 如果对象是可调用对象（例如函数或者实现 __call__ 方法的类），创建一个 Node 实例
         debug("[encapsulate] obj is a callable object")
         class SimpleNode(Node):
-            id = BuiltInID.WP
+            id = NodeType.WP
             def operate(
                 self, input: Any, config: Optional[RT] = None, *args, **kwargs
             ) -> NodeCompletion:
-                return NodeCompletion(BuiltInType.WRAPPED, obj(input, config, *args, **kwargs))
+                return NodeCompletion(NodeCompletionType.WRAPPED, obj(input, config, *args, **kwargs))
         result = SimpleNode()
     elif isinstance(obj, Dict) or isinstance(obj, str): 
         # 如果对象是字典或字符串，创建一个Node实例
         debug("[encapsulate] obj is a dict or str")
         class SimpleNode(Node):
-            id = BuiltInID.WP
+            id = NodeType.WP
             def operate(
                 input: Optional[Any] = None, config: RT = None, *args, **kwargs
             ) -> NodeCompletion:
-                return NodeCompletion(BuiltInType.WRAPPED, obj)
+                return NodeCompletion(NodeCompletionType.WRAPPED, obj)
         result = SimpleNode()
     else:
         # 如果对象不是 Node 或可调用对象，直接返回一个简单的 Node 实例
         debug("[encapsulate] obj is a simple object")
         class SimpleNode(Node):
-            id = BuiltInID.WP
+            id = NodeType.WP
             def operate(
                 self, input: Any, config: Optional[RT] = None, *args, **kwargs
             ) -> NodeCompletion:
                 if hasattr(obj, "operate"):  # 如果对象有 operate 方法，则调用该方法
-                    return NodeCompletion(BuiltInType.WRAPPED, obj.operate(input, config, *args, **kwargs))
+                    return NodeCompletion(NodeCompletionType.WRAPPED, obj.operate(input, config, *args, **kwargs))
                 else:
-                    return NodeCompletion(BuiltInType.WRAPPED, obj)  #  否则返回对象本身
+                    return NodeCompletion(NodeCompletionType.WRAPPED, obj)  #  否则返回对象本身
         result = SimpleNode()
     return result

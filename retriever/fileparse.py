@@ -8,8 +8,7 @@ from spire.pdf import *
 from spire.pdf.common import *
 from PIL import Image
 from typing import Iterable
-from src.modules.extras.tagger.core.interrogator import Interrogator
-from src.modules.extras.tagger.core.interrogators import interrogators
+
 
 class WordExtractor:
 
@@ -21,7 +20,7 @@ class WordExtractor:
 
     def extract_text(
         self, return_value: bool = True, save_output: bool = False
-    ) -> (tuple[str, str] | str):
+    ) -> (Union[tuple[str, str], str]):
         """
         读取word文档中的文本和表格内容，并将其保存为txt文件，文件名为_text.txt，保存在output_folder_path目录下，返回文件路径
         """
@@ -100,7 +99,7 @@ class WordExtractor:
 
     def extract_table(
         self, return_value: bool = True, save_output: bool = True
-    ) -> (tuple[str, str] | str):
+    ) -> (Union[tuple[str, str], str]):
         """
         读取word文档中的表格内容，并将其保存为txt文件，文件名为_table.txt，保存在output_folder_path目录下，返回文件路径
         """
@@ -146,7 +145,7 @@ class WordExtractor:
 
     def extract_image(
         self, return_value: bool = True, save_output: bool = False
-    ) -> (tuple[str, str] | str):
+    ) -> (Union[tuple[str, str], str]):
         """
         读取word文档中的图片，并将其保存为jpg文件，文件名为_picture.jpg，保存在output_folder_path目录下
         反推一个word文档中每张图片的提示词并写入txt文件，返回文件路径

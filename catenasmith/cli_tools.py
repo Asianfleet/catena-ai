@@ -3,7 +3,7 @@ from rich.tree import Tree
 from rich.console import Console
 from typing import Union
 from enum import Enum
-from ..catena_core.settings import settings
+from catena_core.settings import settings
 
 class Style(Enum):
     R = "[reset]"          # 重置所有样式
@@ -44,7 +44,7 @@ class Style(Enum):
 class Formatter:
       
     @classmethod
-    def fc(cls, text: str, style: str | Style) -> str:
+    def fc(cls, text: str, style: Union[str, Style]) -> str:
         """使用指定样式格式化给定文本。
 
         参数:
