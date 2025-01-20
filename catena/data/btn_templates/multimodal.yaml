@@ -1,0 +1,32 @@
+analyze_image:
+  message:
+    - role: "user"
+      content: [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/jpeg;base64,@{analyze_image.meta.param.image}"
+          }, 
+        },
+        {
+          "type": "text",
+          "text": "@{analyze_image.meta.param.query}"
+        }
+      ]
+  meta:
+    retriver_call: Null 
+    model_args: Null
+    param:
+      image: Null
+      query: Null
+    output: 
+      type: test
+      parse_call: Null
+
+
+
+
+
+
+
+

@@ -1,8 +1,8 @@
-from llmchain.prompt.prompt import LLMPrompt
-from llmchain.model.models import Qwen, OpenAIC
-from llmchain.parser.parser import LLMOutputParser
-from llmchain.memory.memory import InfMemory
-from catena_core.settings import settings
+from catena.llmchain.prompt.prompt import LLMPrompt
+from catena.llmchain.model.models import Qwen, OpenAIC
+from catena.llmchain.parser.parser import LLMOutputParser
+from catena.llmchain.memory.memory import InfMemory
+from catena.settings import settings
 
 import base64
 def encode_image(image_path):
