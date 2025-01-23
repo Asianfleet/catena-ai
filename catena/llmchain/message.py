@@ -12,9 +12,8 @@ from typing import (
     Union
 )
 
-from ..catena_core.paths import System
 from ..settings import settings
-from ..catena_core.tools.base import BaseTool
+from ..catena_core.paths import System
 
 class MessageRole:
     """
@@ -88,7 +87,7 @@ class Message(BaseModel):
     # 工具调用
     tool_calls: Optional[List[Dict[str, Any]]] = None
     # 内置的工具调用
-    tool_call_builtin: Optional[List[BaseTool]] = None
+    tool_call_builtin: Optional[List[Any]] = None
     # 工具调用 ID
     tool_call_id: Optional[str] = None
     

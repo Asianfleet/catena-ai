@@ -1082,6 +1082,1290 @@
                     "filename": "versions.json"
                 }
             ]
+        },
+        {
+            "version": "0.2.7",
+            "counttime": "2025-01-22 23:07:16",
+            "filesum": 193,
+            "codesum": 6498,
+            "commentsum": 755,
+            "blanksum": 1636,
+            "statistics": {
+                "": {
+                    "code": 9,
+                    "comment": 0,
+                    "blank": 3
+                },
+                ".py": {
+                    "code": 5612,
+                    "comment": 755,
+                    "blank": 1557
+                },
+                ".txt": {
+                    "code": 1,
+                    "comment": 0,
+                    "blank": 0
+                },
+                ".json": {
+                    "code": 228,
+                    "comment": 0,
+                    "blank": 3
+                },
+                ".csv": {
+                    "code": 5,
+                    "comment": 0,
+                    "blank": 0
+                },
+                ".yaml": {
+                    "code": 643,
+                    "comment": 0,
+                    "blank": 73
+                }
+            },
+            "filelist": [
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": ".clinerules-ask"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": ".clinerules-code"
+                },
+                {
+                    "filename": ".coverage",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 3,
+                    "code": 9,
+                    "comment": 0,
+                    "filename": ".gitignore"
+                },
+                {
+                    "filename": "__pycache__/load_tools.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "__pycache__/paths.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "__pycache__/t.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/.data/.cache/functions_impl.pkl",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 4,
+                    "code": 17,
+                    "comment": 0,
+                    "filename": "catena/.data/.templates/__init__.py"
+                },
+                {
+                    "blank": 65,
+                    "code": 619,
+                    "comment": 0,
+                    "filename": "catena/.data/.templates/comic.yaml"
+                },
+                {
+                    "blank": 8,
+                    "code": 24,
+                    "comment": 0,
+                    "filename": "catena/.data/.templates/multimodal.yaml"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/.data/.templates/system_prompts.yaml"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/.data/__init__.py"
+                },
+                {
+                    "filename": "catena/.data/db/chroma.sqlite3",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 5,
+                    "comment": 0,
+                    "filename": "catena/.data/db/comic.csv"
+                },
+                {
+                    "blank": 3,
+                    "code": 226,
+                    "comment": 0,
+                    "filename": "catena/.data/db/data.json"
+                },
+                {
+                    "filename": "catena/.data/db/wiki.db",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/__init__.py"
+                },
+                {
+                    "filename": "catena/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/__pycache__/settings.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 25,
+                    "code": 101,
+                    "comment": 4,
+                    "filename": "catena/agents/agent copy.py"
+                },
+                {
+                    "blank": 30,
+                    "code": 61,
+                    "comment": 3,
+                    "filename": "catena/agents/agent.py"
+                },
+                {
+                    "blank": 44,
+                    "code": 160,
+                    "comment": 14,
+                    "filename": "catena/agents/agent_copy_2.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 2,
+                    "comment": 0,
+                    "filename": "catena/agents/agent_types.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 6,
+                    "comment": 0,
+                    "filename": "catena/agents/tools/__init__.py"
+                },
+                {
+                    "filename": "catena/agents/tools/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/agents/tools/__pycache__/constructor.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/agents/tools/__pycache__/decorator.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/agents/tools/__pycache__/static.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/agents/tools/__pycache__/tool.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/agents/tools/cache.py"
+                },
+                {
+                    "blank": 15,
+                    "code": 68,
+                    "comment": 3,
+                    "filename": "catena/agents/tools/decorator.py"
+                },
+                {
+                    "blank": 33,
+                    "code": 117,
+                    "comment": 3,
+                    "filename": "catena/agents/tools/static.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 3,
+                    "comment": 0,
+                    "filename": "catena/agents/tools/test.py"
+                },
+                {
+                    "blank": 11,
+                    "code": 25,
+                    "comment": 2,
+                    "filename": "catena/agents/tools/testeee.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/agents/utilities.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/__init__.py"
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/alias.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/callbacks.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/load_tools.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/nodes.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/paths.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/settings.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/__pycache__/utils.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/agents.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/alias/__init__.py"
+                },
+                {
+                    "filename": "catena/catena_core/alias/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/alias/__pycache__/builtin.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 9,
+                    "code": 21,
+                    "comment": 0,
+                    "filename": "catena/catena_core/alias/builtin.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/callback/__init__.py"
+                },
+                {
+                    "filename": "catena/catena_core/callback/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/callback/__pycache__/node_callback.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/callback/__pycache__/node_callbacks.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/callback/agent_callback.py"
+                },
+                {
+                    "blank": 16,
+                    "code": 57,
+                    "comment": 4,
+                    "filename": "catena/catena_core/callback/node_callback.py"
+                },
+                {
+                    "blank": 38,
+                    "code": 138,
+                    "comment": 11,
+                    "filename": "catena/catena_core/cconf.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/evaluate.py"
+                },
+                {
+                    "blank": 6,
+                    "code": 33,
+                    "comment": 2,
+                    "filename": "catena/catena_core/load_tools.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/node/__init__.py"
+                },
+                {
+                    "filename": "catena/catena_core/node/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/node/__pycache__/base.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/node/__pycache__/bus.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/node/__pycache__/completion.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/node/__pycache__/testbase.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 75,
+                    "code": 307,
+                    "comment": 92,
+                    "filename": "catena/catena_core/node/base.py"
+                },
+                {
+                    "blank": 24,
+                    "code": 91,
+                    "comment": 5,
+                    "filename": "catena/catena_core/node/completion.py"
+                },
+                {
+                    "blank": 5,
+                    "code": 6,
+                    "comment": 0,
+                    "filename": "catena/catena_core/node/meta.py"
+                },
+                {
+                    "blank": 53,
+                    "code": 207,
+                    "comment": 31,
+                    "filename": "catena/catena_core/node/testbase.py"
+                },
+                {
+                    "blank": 27,
+                    "code": 92,
+                    "comment": 13,
+                    "filename": "catena/catena_core/paths.py"
+                },
+                {
+                    "blank": 59,
+                    "code": 159,
+                    "comment": 15,
+                    "filename": "catena/catena_core/tools.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 6,
+                    "comment": 0,
+                    "filename": "catena/catena_core/tools/__init__.py"
+                },
+                {
+                    "filename": "catena/catena_core/tools/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/tools/__pycache__/base.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/tools/__pycache__/function.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/tools/__pycache__/tool.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/tools/__pycache__/tool_registry.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/tools/__pycache__/toolset.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 42,
+                    "code": 228,
+                    "comment": 18,
+                    "filename": "catena/catena_core/tools/function.py"
+                },
+                {
+                    "blank": 8,
+                    "code": 20,
+                    "comment": 9,
+                    "filename": "catena/catena_core/tools/testapi.py"
+                },
+                {
+                    "blank": 22,
+                    "code": 67,
+                    "comment": 3,
+                    "filename": "catena/catena_core/tools/tool.py"
+                },
+                {
+                    "blank": 8,
+                    "code": 28,
+                    "comment": 0,
+                    "filename": "catena/catena_core/tools/tool_registry.py"
+                },
+                {
+                    "blank": 8,
+                    "code": 24,
+                    "comment": 0,
+                    "filename": "catena/catena_core/tools/toolset.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catena_core/utils/__init__.py"
+                },
+                {
+                    "filename": "catena/catena_core/utils/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/utils/__pycache__/format_builtin.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/utils/__pycache__/format_json.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/utils/__pycache__/image.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/utils/__pycache__/parse_code.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/utils/__pycache__/timer.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catena_core/utils/__pycache__/utils.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 5,
+                    "code": 9,
+                    "comment": 2,
+                    "filename": "catena/catena_core/utils/format_builtin.py"
+                },
+                {
+                    "blank": 7,
+                    "code": 29,
+                    "comment": 2,
+                    "filename": "catena/catena_core/utils/format_json.py"
+                },
+                {
+                    "blank": 37,
+                    "code": 104,
+                    "comment": 17,
+                    "filename": "catena/catena_core/utils/image.py"
+                },
+                {
+                    "blank": 30,
+                    "code": 123,
+                    "comment": 19,
+                    "filename": "catena/catena_core/utils/log.py"
+                },
+                {
+                    "blank": 13,
+                    "code": 13,
+                    "comment": 9,
+                    "filename": "catena/catena_core/utils/parse_code.py"
+                },
+                {
+                    "blank": 7,
+                    "code": 42,
+                    "comment": 5,
+                    "filename": "catena/catena_core/utils/pypi.py"
+                },
+                {
+                    "blank": 4,
+                    "code": 14,
+                    "comment": 1,
+                    "filename": "catena/catena_core/utils/shell.py"
+                },
+                {
+                    "blank": 10,
+                    "code": 41,
+                    "comment": 0,
+                    "filename": "catena/catena_core/utils/timer.py"
+                },
+                {
+                    "blank": 12,
+                    "code": 58,
+                    "comment": 4,
+                    "filename": "catena/catena_core/utils/utils.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catenasmith/__init__.py"
+                },
+                {
+                    "filename": "catena/catenasmith/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catenasmith/__pycache__/cli_tools.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 19,
+                    "code": 69,
+                    "comment": 36,
+                    "filename": "catena/catenasmith/cli_tools.py"
+                },
+                {
+                    "blank": 3,
+                    "code": 2,
+                    "comment": 0,
+                    "filename": "catena/catenasmith/t.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/catenasmith/visualize/__init__.py"
+                },
+                {
+                    "filename": "catena/catenasmith/visualize/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/catenasmith/visualize/__pycache__/cli_visualize.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 28,
+                    "code": 173,
+                    "comment": 39,
+                    "filename": "catena/catenasmith/visualize/cli_visualize.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/error/__init__.py"
+                },
+                {
+                    "filename": "catena/error/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/error/__pycache__/base.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/error/__pycache__/base_err.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/error/__pycache__/chainerr.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/error/__pycache__/modelerr.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/error/__pycache__/toolserr.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/error/__pycache__/viserr.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "catena/error/agenterr.py"
+                },
+                {
+                    "blank": 11,
+                    "code": 21,
+                    "comment": 5,
+                    "filename": "catena/error/base_err.py"
+                },
+                {
+                    "blank": 9,
+                    "code": 6,
+                    "comment": 0,
+                    "filename": "catena/error/chainerr.py"
+                },
+                {
+                    "blank": 2,
+                    "code": 2,
+                    "comment": 0,
+                    "filename": "catena/error/modelerr.py"
+                },
+                {
+                    "blank": 14,
+                    "code": 8,
+                    "comment": 0,
+                    "filename": "catena/error/toolserr.py"
+                },
+                {
+                    "blank": 1,
+                    "code": 2,
+                    "comment": 0,
+                    "filename": "catena/error/utilserr.py"
+                },
+                {
+                    "blank": 3,
+                    "code": 4,
+                    "comment": 0,
+                    "filename": "catena/error/viserr.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "catena/llmchain/__init__.py"
+                },
+                {
+                    "filename": "catena/llmchain/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/__pycache__/memory.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/__pycache__/message.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/__pycache__/models.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/__pycache__/parser.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/__pycache__/prompt.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/__pycache__/response.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/llmchain/memory/__init__.py"
+                },
+                {
+                    "filename": "catena/llmchain/memory/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/memory/__pycache__/memory.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 24,
+                    "code": 92,
+                    "comment": 8,
+                    "filename": "catena/llmchain/memory/memory.py"
+                },
+                {
+                    "blank": 36,
+                    "code": 150,
+                    "comment": 12,
+                    "filename": "catena/llmchain/message.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/llmchain/model/__init__.py"
+                },
+                {
+                    "filename": "catena/llmchain/model/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/model/__pycache__/base.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/model/__pycache__/metrics.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/model/__pycache__/models.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 33,
+                    "code": 97,
+                    "comment": 35,
+                    "filename": "catena/llmchain/model/base.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/llmchain/model/kimi/__init__.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/llmchain/model/kimi/kimi.py"
+                },
+                {
+                    "blank": 4,
+                    "code": 29,
+                    "comment": 0,
+                    "filename": "catena/llmchain/model/metrics.py"
+                },
+                {
+                    "filename": "catena/llmchain/model/minimal/__pycache__/llm.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 6,
+                    "code": 25,
+                    "comment": 0,
+                    "filename": "catena/llmchain/model/minimal/llm.py"
+                },
+                {
+                    "blank": 54,
+                    "code": 283,
+                    "comment": 33,
+                    "filename": "catena/llmchain/model/models.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/llmchain/model/oai/__init__.py"
+                },
+                {
+                    "filename": "catena/llmchain/model/oai/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/model/oai/__pycache__/oai.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 52,
+                    "code": 319,
+                    "comment": 31,
+                    "filename": "catena/llmchain/model/oai/oai.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/llmchain/model/qwen/__init__.py"
+                },
+                {
+                    "blank": 12,
+                    "code": 17,
+                    "comment": 4,
+                    "filename": "catena/llmchain/model/qwen/qwen.py"
+                },
+                {
+                    "filename": "catena/llmchain/parser/__pycache__/parser.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 36,
+                    "code": 109,
+                    "comment": 4,
+                    "filename": "catena/llmchain/parser/parser.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "catena/llmchain/prompt/__init__.py"
+                },
+                {
+                    "filename": "catena/llmchain/prompt/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/llmchain/prompt/__pycache__/prompt.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 56,
+                    "code": 232,
+                    "comment": 42,
+                    "filename": "catena/llmchain/prompt/prompt.py"
+                },
+                {
+                    "blank": 9,
+                    "code": 16,
+                    "comment": 0,
+                    "filename": "catena/llmchain/response.py"
+                },
+                {
+                    "blank": 2,
+                    "code": 19,
+                    "comment": 0,
+                    "filename": "catena/retriever/__init__.py"
+                },
+                {
+                    "filename": "catena/retriever/__pycache__/__init__.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/retriever/__pycache__/core.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "catena/retriever/__pycache__/fileparse.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 55,
+                    "code": 138,
+                    "comment": 15,
+                    "filename": "catena/retriever/core.py"
+                },
+                {
+                    "blank": 49,
+                    "code": 249,
+                    "comment": 33,
+                    "filename": "catena/retriever/fileparse.py"
+                },
+                {
+                    "blank": 78,
+                    "code": 217,
+                    "comment": 28,
+                    "filename": "catena/settings.py"
+                },
+                {
+                    "blank": 114,
+                    "code": 476,
+                    "comment": 94,
+                    "filename": "core.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "data.json"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "llmchain/model/oai/oai.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "requirements.txt"
+                },
+                {
+                    "blank": 6,
+                    "code": 26,
+                    "comment": 5,
+                    "filename": "test_.py"
+                },
+                {
+                    "blank": 4,
+                    "code": 11,
+                    "comment": 0,
+                    "filename": "test_bus.py"
+                },
+                {
+                    "blank": 4,
+                    "code": 7,
+                    "comment": 0,
+                    "filename": "test_dec.py"
+                },
+                {
+                    "blank": 10,
+                    "code": 13,
+                    "comment": 0,
+                    "filename": "test_meta.py"
+                },
+                {
+                    "blank": 9,
+                    "code": 20,
+                    "comment": 9,
+                    "filename": "test_t.py"
+                },
+                {
+                    "blank": 7,
+                    "code": 20,
+                    "comment": 2,
+                    "filename": "test_tt.py"
+                },
+                {
+                    "blank": 6,
+                    "code": 26,
+                    "comment": 0,
+                    "filename": "test_tttt.py"
+                },
+                {
+                    "filename": "tests/__pycache__/test_completion.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "tests/__pycache__/test_message.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "tests/__pycache__/test_model.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "tests/__pycache__/test_parser.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "tests/__pycache__/test_prompt.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "filename": "tests/__pycache__/test_tool.cpython-310.pyc",
+                    "isbinaryfile": true,
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "tests/test_completion.py"
+                },
+                {
+                    "blank": 10,
+                    "code": 48,
+                    "comment": 5,
+                    "filename": "tests/test_message.py"
+                },
+                {
+                    "blank": 7,
+                    "code": 30,
+                    "comment": 4,
+                    "filename": "tests/test_model.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "tests/test_parser.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 0,
+                    "comment": 0,
+                    "filename": "tests/test_prompt.py"
+                },
+                {
+                    "blank": 93,
+                    "code": 177,
+                    "comment": 20,
+                    "filename": "tests/test_tool.py"
+                },
+                {
+                    "blank": 0,
+                    "code": 1,
+                    "comment": 0,
+                    "filename": "versions.json"
+                }
+            ]
         }
     ]
 }

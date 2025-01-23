@@ -2,8 +2,8 @@ import unittest
 from typing import Any
 
 from catena.error import toolserr
-from catena.agents.tools import tool, Tool
-from catena.catena_core.tools.base import BaseTool
+from catena.agents.tools import tool, StaticTool
+from catena.catena_core.tools import Tool
 from catena.catena_core.utils.timer import record_time
 from catena.catena_core.tools.tool_registry import ToolRegistry
 
@@ -103,7 +103,7 @@ class TestToolConstructor(unittest.TestCase):
         tool_instance_entry = TestTool_entry(
             name="test_tool",
             description="test description",
-            entry_function=sample_func
+            function_to_exec=sample_func
         )
         
         tool_instance_noentry = TestTool_noentry(
@@ -121,7 +121,7 @@ class TestToolConstructor(unittest.TestCase):
     def test_error_implement(self):
         """测试输入验证"""
         
-        class TestTool_noimpl(BaseTool[str]):
+        class TestTool_noimpl(Tool[str]):
             pass
                 
         with self.assertRaises(TypeError):
@@ -133,7 +133,7 @@ class TestToolConstructor(unittest.TestCase):
     def test_error_validation(self):
         """测试输入验证"""
         
-        class TestTool_inp(BaseTool[str]):
+        class TestTool_inp(Tool[str]):
 
             @record_time
             def _execute(self) -> Any:
@@ -149,7 +149,7 @@ class TestToolConstructor(unittest.TestCase):
                 pass
                 #raise toolserr.ToolOutputValidateError("输出结果验证失败")
                 
-        class TestTool_op(BaseTool[str]):
+        class TestTool_op(Tool[str]):
 
             @record_time
             def _execute(self) -> Any:
@@ -164,7 +164,7 @@ class TestToolConstructor(unittest.TestCase):
                 """ 验证输出结果 """
                 raise toolserr.ToolOutputValidateError("输出结果验证失败")
                 
-        class TestTool_exec(BaseTool[str]):
+        class TestTool_exec(Tool[str]):
             @record_time
             def _execute(self) -> Any:
                 """ 执行工具的核心方法的抽象接口 """   
@@ -227,7 +227,7 @@ class TestToolConstructor(unittest.TestCase):
         tool_instance = Tool(
             name="test_tool",
             description="test description",
-            entry_function=sample_func
+            function_to_exec=sample_func
         )
         
         expected_schema = {
@@ -273,7 +273,7 @@ class TestToolConstructor(unittest.TestCase):
             Tool(
                 name="test_tool",
                 description="test description",
-                entry_function=invalid_func
+                function_to_exec=invalid_func
             )
 
     def test_missing_type_annotations(self):
@@ -286,5 +286,5 @@ class TestToolConstructor(unittest.TestCase):
             Tool(
                 name="test_tool",
                 description="test description",
-                entry_function=invalid_func
+                function_to_exec=invalid_func
             )

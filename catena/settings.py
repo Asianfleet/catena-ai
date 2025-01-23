@@ -35,10 +35,12 @@ LLM_CONFIG = Catenaconf.create({
     
 })
 
-DEBUG_CONFIG = Catenaconf.create({
+LOG_CONFIG = Catenaconf.create({
     "enable_chain_visualize": True,     # 可视化管道内部过程
     "enable_func_level_debug": False,   # 输出函数级别的调试信息
-    "enable_func_level_info": True      # 输出函数级别的信息
+    "enable_func_level_info": True,     # 输出函数级别的信息
+    "enable_func_level_warning": True,  # 输出函数级别的警告
+    "enable_func_level_error": True     # 输出函数级别的错误
 })
 
 VISUALIZE_CONFIG = Catenaconf.create({
@@ -160,7 +162,7 @@ class LLMSettings(BaseSettings):
  
 class DebugSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = DEBUG_CONFIG
+    _DEFAULT_CONFIG = LOG_CONFIG
  
 class VisualizeSettings(BaseSettings):
     _instance = None

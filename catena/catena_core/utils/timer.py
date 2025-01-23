@@ -9,12 +9,12 @@ class Timer:
     def __init__(self):
         self.start_time: Optional[float] = None
         self.end_time: Optional[float] = None
-        self.elapsed_time: Optional[float] = None
+        self.time_elapsed: Optional[float] = None
 
     @property
     def elapsed(self) -> float:
-        if self.elapsed_time is not None:
-            return self.elapsed_time
+        if self.time_elapsed is not None:
+            return self.time_elapsed
         elif self.start_time is not None:
             return perf_counter() - self.start_time
         else:
@@ -27,7 +27,7 @@ class Timer:
     def stop(self) -> float:
         self.end_time = perf_counter()
         if self.start_time is not None:
-            self.elapsed_time = self.end_time - self.start_time
+            self.time_elapsed = self.end_time - self.start_time
         return self.end_time
 
     def __enter__(self):
@@ -37,7 +37,7 @@ class Timer:
     def __exit__(self, *args):
         self.end_time = perf_counter()
         if self.start_time is not None:
-            self.elapsed_time = self.end_time - self.start_time
+            self.time_elapsed = self.end_time - self.start_time
 
 def record_time(func):
     @wraps(func)
@@ -45,7 +45,7 @@ def record_time(func):
         start_time = perf_counter()
         result = func(*args, **kwargs)
         end_time = perf_counter()
-        elapsed_time = end_time - start_time
-        wrapper.elapsed_time = elapsed_time
+        time_elapsed = end_time - start_time
+        wrapper.time_elapsed = time_elapsed
         return result
     return wrapper

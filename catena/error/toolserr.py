@@ -15,6 +15,9 @@ class ToolInputValidateError(BaseERR):
 class ToolOutputValidateError(BaseERR):
     """ 工具输出校验错误 """
 
+class ToolValidateError(BaseERR):
+    """ 工具校验错误 """
+
 class CacheVersionMismatch(BaseERR):
     """ 缓存版本不匹配 """
     

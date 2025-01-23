@@ -9,10 +9,8 @@ from typing import (
     overload
 )
 
-from .constructor import Tool
-from ...catenasmith.cli_tools import error
-from ...catena_core.utils.timer import record_time
-from ...catena_core.tools.tool_registry import ToolRegistry
+from ...catena_core.tools.tool import Tool
+from ...catenasmith.cli_tools import error, debug
 
 @overload
 def tool() -> Tool:
@@ -27,7 +25,10 @@ def tool(
     *,
     name: Optional[str] = None,
     description: Optional[str] = None,
-    auto_create: Optional[bool] = None,
+    allow_variadic_args: bool = False,
+    strict_check: bool = False,
+    override_meta: bool = False,
+    auto_impl: Optional[bool] = None,
     show_result: Optional[bool] = None,
     stop_after_call: Optional[bool] = None
 ) -> Tool:
@@ -40,9 +41,12 @@ def tool(*args, **kwargs):
     VALID_KWARGS = frozenset({
         "name",
         "description",
+        "allow_variadic_args",
+        "strict_check",
+        "override_meta",
+        "auto_impl",
         "show_result",
-        "stop_after_call",
-        "auto_create"
+        "stop_after_call"
     })
     
     # 检查是否有无效的关键字
@@ -55,26 +59,17 @@ def tool(*args, **kwargs):
     def decorator(func):
         
         if not hasattr(func, "__is_registered__") or not func.__is_registered__:
-            description = kwargs.get("description", func.__doc__)
-            if not description:
-                raise ValueError(
-                    f"Tool {func.__name__!r}: description required."
-                )
             tool_metadata = {
-                "name": kwargs.get("name", func.__name__),
-                "description": kwargs.get("description", func.__doc__),
-                "entry_function": func,
-                **{k: v for k, v in kwargs.items() if k not in ["name", "description"]}
+                "func": func,
+                **{k: v for k, v in kwargs.items() if k != "func"}
             }
-            wrapped = Tool(**tool_metadata)    
-            wrapped.injected_by_decorator = True
-            ToolRegistry.register(wrapped)
+            Tool(**tool_metadata)    
             func.__is_registered__ = True
         
         @wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                return record_time(func)(*args, **kwargs)
+                return func(*args, **kwargs)
             except Exception as e:
                 error(
                     f"Error in tool {func.__name__!r}: {e!r}",

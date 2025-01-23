@@ -67,8 +67,6 @@ class MessageRole:
             msg["content"].append({"type": "text", "text": text})
         return msg
 
-
-
 # 示例调用
 if __name__ == "__main__":
     # 示例图片路径或 Base64 字符串

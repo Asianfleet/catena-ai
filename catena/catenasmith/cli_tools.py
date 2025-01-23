@@ -1,7 +1,7 @@
 from functools import wraps
 from rich.tree import Tree
 from rich.console import Console
-from typing import Union
+from typing import Optional, Union
 from enum import Enum
 from ..settings import settings
 
@@ -44,7 +44,9 @@ class Style(Enum):
 class Formatter:
       
     @classmethod
-    def fc(cls, text: str, style: Union[str, Style]) -> str:
+    def fc(
+        cls, text: str, style: Optional[Union[str, Style]] = None
+    ) -> str:
         """使用指定样式格式化给定文本。
 
         参数:
@@ -54,6 +56,8 @@ class Formatter:
         返回:
             str: 带有样式标签的格式化文本。
         """
+        if not style:
+            return text
         style = style if isinstance(style, str) else style.value
         style = "[" + style.strip('[]') + "]"
         return f"{style}{text}[/{style.strip('[]')}]"
@@ -71,20 +75,20 @@ class Formatter:
         values = [str(value) for value in values]
         console.print(cls.fc("".join(values), style))
       
-def info(*values):
+def info(*values, prefix: str = ""):
     """ 输出运行信息 """
     if settings.debug.enable_func_level_info:
-        print(*values)
+        Formatter.printf(f"\[{prefix}.info] ", *values, style=None)
  
-def debug(*values):
+def debug(*values, prefix: str = ""):
     """ 输出调试信息 """
     if settings.debug.enable_func_level_debug:
-        print(*values)       
+        Formatter.printf(f"\[{prefix}.debug] ", *values, style="bold")       
 
-def warning(*values):
+def warning(*values, prefix: str = ""):
     """ 输出警告信息 """
     if settings.debug.enable_func_level_warning:
-        Formatter.printf(*values, style="bold yellow")
+        Formatter.printf(f"\[{prefix}.warning] ", *values, style="bold orange1")
 
 def error(*values):
     """ 输出错误信息 """
@@ -92,8 +96,9 @@ def error(*values):
         Formatter.printf(*values, style="bold red")
        
 if __name__ == "__main__":
-    print(Style.fc("Hello, world!", "bold underline"))
-    Style.printf("Hello, world!", style="bold underline")
+    # python -m catena.catenasmith.cli_tools
+    #print(Style.fc("Hello, world!", "bold underline"))
+    #Style.printf("Hello, world!", style="bold underline")
     
     """ console = Console()
 
@@ -115,5 +120,6 @@ if __name__ == "__main__":
         live.stop()
         
     console.print("Done!") """
+    info("warning")
     
     

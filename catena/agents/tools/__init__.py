@@ -1,7 +1,7 @@
 from .decorator import tool
-from .constructor import Tool
+from .static import StaticTool
 
 __all__ = [
-    "constructor",
-    "BaseTool",
+    "StaticTool",
+    "tool",
 ]

@@ -7,7 +7,7 @@ from ....settings import settings
 
 def init_minimal_client(provider: str = "OpenAI"):
     if provider == "OpenAI":
-        return OpenAI(**settings.minimal_llm.config.__container__)
+        return OpenAI()
     else:
         raise ValueError(f"Unknown model {provider}")
     
@@ -16,7 +16,7 @@ def minimal_llm_response(
     model: str = "gpt-4o-mini",
     messages: List = None,
     **kwargs
-) -> OpenAI:
+) -> str:
     
     client = init_minimal_client()
     if kwargs:
