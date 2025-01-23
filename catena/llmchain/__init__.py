@@ -1,7 +1,7 @@
 """ from .memory.memory import InfMemory, init_memory
 from .model.models import OpenAIC, Qwen, QianFan, init_model
 from .parser.parser import LLMOutputParser
-from .prompt.prompt import LLMPrompt
+from .prompt.prompt import ModelPrompt
 from ..catena_core.utils.utils import MessageRole 
 
 
@@ -11,7 +11,7 @@ __all__ = [
     "init_memory",
 
     "MessageRole",
-    "LLMPrompt",
+    "ModelPrompt",
     "InputPrompt",
     "LLMOutputParser",
 

@@ -49,10 +49,6 @@ except (ModuleNotFoundError, ImportError):
 
 
 class OpenAIOrigin(Model):
-    model_config = ConfigDict(
-        protected_namespaces=(),
-        arbitrary_types_allowed=True
-    )
     """
     用于与 OpenAI 模型交互的类。
 
@@ -103,6 +99,11 @@ class OpenAIOrigin(Model):
     structured_outputs: bool = False
     # 模型是否支持结构化输出。
     supports_structured_outputs: bool = True
+    
+    model_config = ConfigDict(
+        protected_namespaces=(),
+        arbitrary_types_allowed=True
+    )
     
     def to_dict(self) -> Dict[str, Any]:
         _dict = self.model_dump(include={"name", "node_id", "provider", "metrics"})

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from typing import (
     Any, 
     Callable, 
@@ -21,7 +21,10 @@ from ...error.chainerr import *
 from ...catena_core.node.base import Node, NodeBus
 from ...settings import settings, RTConfig
 from ...catena_core.callback.node_callback import node_callback
-from ...catena_core.alias.builtin import ModelProvider as Provider
+from ...catena_core.alias.builtin import (
+    NodeType as Ntype, 
+    ModelProvider as Provider
+)
 
 
 class Model(Node):
@@ -61,6 +64,9 @@ class Model(Node):
     #system_prompt: Optional[str] = None
     # Instructions from the model added to the Agent.
     #instructions: Optional[List[str]] = None
+    
+    # 节点 ID
+    node_id: Ntype = Field(default=Ntype.MODEL, init=False)
     
     def to_dict(self) -> Dict[str, Any]:
         _dict = self.model_dump(include={"model", "node_id", "provider", "metrics"})

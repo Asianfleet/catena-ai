@@ -1,20 +1,28 @@
 import re
+import os
 from enum import Enum
-from catenaconf import Catenaconf
-from typing import Any, List, Optional, Union
-from rich.console import Console
+from catenaconf import Catenaconf, KvConfig
+from typing import (
+    Any, 
+    Dict, 
+    List, 
+    Optional, 
+    Union
+)
 from pydantic import (
     BaseModel, 
+    ConfigDict, 
     ValidationError, 
     Field, model_validator, create_model
 )
 
-from ...catena_core.load_tools import load_prompt, interpolate, unwarp
 from ...retriever import Retriever, InputRetrieve
+from ...catena_core.paths import Template
 from ...catena_core.utils.utils import MessageRole
 from ...catena_core.node.base import Node, NodeBus
-from ...catena_core.alias.builtin import NodeType
-from ...settings import RTConfig, info
+from ...catena_core.alias.builtin import NodeType as Ntype
+from ...catena_core.load_tools import load_prompt, interpolate, unwarp
+from ...settings import info, RTConfig as RT
 from ...catenasmith.cli_tools import (
     Style as sty,
     debug, info
@@ -45,13 +53,13 @@ class SimpleInputArgs(BaseModel):
                 raise ValueError("Only one of context or retrieve can be provided when task is set.")
         return values
     
-class LLMPrompt(Node):
+class ModelPrompt(Node):
     """
     用于生成和管理不同类型的“提示词”（prompt）的工具类，支持通过模板或直接输入来生成一系列的消息（messages）。
     可灵活处理基于字符串或模板的输入，并与大模型（如 GPT 或其他生成模型）交互。其主要功能包括：
     
     ### 模板支持：
-    - from_template 类方法：根据模板字符串（或模板 ID）创建 LLMPrompt 实例，并解析模板以生成结构化的提示信息。
+    - from_template 类方法：根据模板字符串（或模板 ID）创建 ModelPrompt 实例，并解析模板以生成结构化的提示信息。
       支持内建模板和自定义模板，且可以处理带有视觉信息（如图片）的模板。
     - 数据验证（generate_schema 类方法）：根据输入的数据（字典或列表）动态生成 JSON 格式的 schema，用于验证输入数据的合法性。支持对复杂嵌套数据结构进行递归检查。
     - 消息生成（invoke 方法）：根据输入（字符串或字典）生成提示信息。如果使用内建模板，则会根据模板参数填充输入内容并生成相应的消息。如果使用自定义模板或无模板输入，则直接生成用户输入的消息。支持在模板中插入动态数据，并处理图像和上下文信息。
@@ -68,29 +76,49 @@ class LLMPrompt(Node):
     - 支持动态创建模板模型，灵活处理模板输入，并根据具体情况选择不同的处理方式。
     """
     
-    node_id = NodeType.PRM
-    _template_type: str = None
-    _template = None
-    _message = [MessageRole.mask()]
-
-    def __init__(self, prompt_input: str=None):
-        super().__init__(sty.BB)
-        self.input = prompt_input
-        
+    # 提示词输入
+    prompt_input: Optional[str] = None
+    # 节点 ID
+    node_id: Ntype = Field(default=Ntype.MODEL, init=False)
+    # 消息列表
+    message: List = Field(default=[MessageRole.mask()], init=False)
+    # 模板配置 
+    template: str = Field(default=None, init=False)
+    # 模板类型
+    template_type: str = Field(default=None, init=False)
+    
+    model_config = ConfigDict(
+        protected_namespaces=(),
+        arbitrary_types_allowed=True
+    )
+    
     @property
-    def node_id(self):
+    def node_id(self) -> Ntype:
         return self.node_id
     
     @property
-    def message(self):
-        return self._message
+    def message(self) -> List:
+        return self.message
     
     @message.setter
     def message(self, messages: List):
         if not isinstance(messages, List):
             raise TypeError("Message must be list type.")
         else:
-            self._message = messages
+            self.message = messages
+    
+    @staticmethod
+    def load_prompt(label: str, resolve: bool = False) -> Union[KvConfig, None]:
+        if len(label.split(".")) == 2:
+            file = label.split(".")[0]
+            label = label.split(".")[1]
+            config_path = os.path.join(Template.PROMPT_PATH, file + ".yaml")
+            prompt = Catenaconf.load(config_path)[label]
+            if resolve: 
+                Catenaconf.resolve(prompt)
+            return prompt
+        else:
+            return None
     
     @classmethod
     def from_template(cls, template: Union[str, Enum], *args, **kwargs):
@@ -98,10 +126,10 @@ class LLMPrompt(Node):
         instance = cls()  # 创建实例
         instance._template = load_prompt(template)
         if instance._template != "invalid label":
-            info("[LLMPrompt.from_template] 使用内建模板")
+            info("[ModelPrompt.from_template] 使用内建模板")
             instance._template_type = "built-in:" + template
         else:
-            info("[LLMPrompt.from_template] 使用字符串模板")
+            info("[ModelPrompt.from_template] 使用字符串模板")
             
             """ 
             ########################### 从字符串新建提示词模板核心逻辑 ##############################
@@ -136,11 +164,11 @@ class LLMPrompt(Node):
             args = re.findall(r'\{(.*?)\}', template)   # 提取字符串中的变量占位符
             omega = re.sub(r'\{.*?\}', to_omega, template)  # 将占位符替换为 Catenaconf 引用
             if "image" not in args:
-                print("[LLMPrompt.from_template] 纯文本信息")
+                print("[ModelPrompt.from_template] 纯文本信息")
                 omega_msg = [MessageRole.mask(), MessageRole.user(omega)]
                 instance._template_type = "string-template"
             else:
-                print("[LLMPrompt.from_template] 含视觉信息")
+                print("[ModelPrompt.from_template] 含视觉信息")
                 args.remove("image")    # 移除 image 参数,因为大模型接受含有图片的消息列表的格式不同
                 omega_msg = None
                 instance.omega = omega
@@ -194,57 +222,65 @@ class LLMPrompt(Node):
         
         return schema
 
-    def _simple_invoke(input, config = None, *args, **kwargs) -> List:
-            input = input or self.input
-            if isinstance(input, str):
-                message = [*self.message, MessageRole.user(input)]
-                return message
-            elif isinstance(input, dict):
-                # 验证字典数据
+    
+    def _simple_invoke(self, prompt_input: Union[str, Dict], *args, **kwargs) -> List:
+        """ 
+        无模板模式，此时输入应为两种情况：
+        1. 字符串，直接作为用户输入；
+        2. 字典，包含 task 和 retrieve 两个字段，其中 retrieve 为可选参数。
+        """
+        prompt_input = prompt_input or self.prompt_input
+        if isinstance(prompt_input, str):
+            message = [*self.message, MessageRole.user(prompt_input)]
+            return message
+        elif isinstance(prompt_input, dict):
+            # 验证字典数据
+            try:
+                prompt_input = SimpleInputArgs(**prompt_input)  # 使用字典解包进行验证
+            except ValidationError:
+                raise
+            if prompt_input["retrieve"]:
                 try:
-                    input = SimpleInputArgs(**input)  # 使用字典解包进行验证
+                    retrieve = InputRetrieve(**prompt_input["retrieve"])  # 使用字典解包进行验证
                 except ValidationError as e:
                     print(e.json())
 
-                if input["retrieve"]:
-                    try:
-                        retrieve = InputRetrieve(**input["retrieve"])  # 使用字典解包进行验证
-                    except ValidationError as e:
-                        print(e.json())
+                with Retriever(retrieve["setter"]) as retrv:
+                    retrieved = retrv.task(prompt_input["task"], **retrieve["args"])
+                    
+            self.message.append(MessageRole.context(retrieved))
+            self.message.append(MessageRole.user(prompt_input["task"]))
+            
+            return self.message
 
-                    with Retriever(retrieve["setter"]) as retrv:
-                        retrieved = retrv.task(input["task"], **retrieve["args"])
-                        
-                self.message.append(MessageRole.context(retrieved))
-                self.message.append(MessageRole.user(input["task"]))
-                
-                return self.message
+        
 
-        # 有模板模式（使用内建模板），此时输入应为两种情况：
-        # 1. 字符串，直接作为用户输入，此时内建模板必须只包含一个参数。
-        # 2. 字典，包含内建模板的所有参数，其中键为参数名称，值为参数的值。
-
-    def _from_yaml_template(input, config = None, *args, **kwargs):
-        mapping = {key: (str, value) for key, value in self._template.meta.param.items()}
+    def _from_yaml_template(self, prompt_input: Union[str, Dict], *args, **kwargs) -> List:
+        """ 
+        有模板模式（从 yaml 文件中读取模板），此时输入应为两种情况：
+        1. 字符串，直接作为用户输入，此时内建模板必须只包含一个参数。
+        2. 字典，包含内建模板的所有参数，其中键为参数名称，值为参数的值。
+        """
+        mapping = {key: (str, value) for key, value in self.template.meta.param.items()}
         TempateInputPrompt = create_model(
             "TempateInputPrompt",
             **mapping,
             __base__=BaseModel
         )
 
-        if isinstance(input, dict):
+        if isinstance(prompt_input, dict):
             try:
-                input = TempateInputPrompt(**input)
-                input = input.model_dump()
+                prompt_input = TempateInputPrompt(**prompt_input)
+                prompt_input = prompt_input.model_dump()
             except ValidationError as e:
                 print(e.json())
 
-            for arg, value in input.items():
+            for arg, value in prompt_input.items():
                 self._template.meta.param[arg] = value
         else:
             assert len(self._template.meta.param) == 1, ""
             key = list(unwarp(self._template.meta.param).keys())
-            self._template.meta.param[key[0]] = input
+            self._template.meta.param[key[0]] = prompt_input
 
         if self._template.meta.retriver_call:
             pass
@@ -257,11 +293,14 @@ class LLMPrompt(Node):
 
         return self.message
 
-    # 有模板模式（使用字符串动态创建模板），此时输入应为两种情况：
-    # 1. 字符串，直接作为模板字符串；
-    # 2. 字典，包含模板字符串和模板参数。
     
-    def _from_str_template(input, config = None, *args, **kwargs):
+    
+    def _from_str_template(prompt_input, config = None, *args, **kwargs):
+        """ 
+        有模板模式（使用字符串动态创建模板），此时输入应为两种情况：
+        1. 字符串，直接作为模板字符串；
+        2. 字典，包含模板字符串和模板参数。 
+        """
         mapping = {# 从模板中获取参数
             key: (str, value) for key, value in self._template.meta.param.items()
         }
@@ -271,13 +310,13 @@ class LLMPrompt(Node):
             __base__=BaseModel
         )
 
-        if isinstance(input, dict):  # 如果输入为字典
+        if isinstance(prompt_input, dict):  # 如果输入为字典
             try:
-                input = TempateInputPrompt(**input) # 进行数据验证
-                input = input.model_dump()          # 通过验证之后生成字典
+                prompt_input = TempateInputPrompt(**prompt_input) # 进行数据验证
+                prompt_input = prompt_input.model_dump()          # 通过验证之后生成字典
             except ValidationError as e:
                 print(e.json())
-            for arg, value in input.items():            # 遍历传入参数
+            for arg, value in prompt_input.items():            # 遍历传入参数
                 self._template.meta.param[arg] = value  # 将传入参数字典按照键进行匹配，赋值给模板参数
                 if arg == "image" and value:            # 处理图片参数
                     if not isinstance(value, List):     # 如果不是列表，则转换为列表
@@ -289,7 +328,7 @@ class LLMPrompt(Node):
         else:   # 如果输入为字符串，此时模板必须只有一个参数
             assert len(self._template.meta.param) == 1, ""
             key = list(unwarp(self._template.meta.param).keys())
-            self._template.meta.param[key[0]] = input
+            self._template.meta.param[key[0]] = prompt_input
 
         #TODO:RAG支持还未实现
         if self._template.meta.retriver_call:
@@ -301,30 +340,28 @@ class LLMPrompt(Node):
         return self.message
 
     @cli_visualize
-    def operate(self, input: NodeBus) -> NodeBus:
+    def operate(self, prompt_input: NodeBus) -> NodeBus:
        
-        # 无模板模式，此时输入应为两种情况：
-        # 1. 字符串，直接作为用户输入；
-        # 2. 字典，包含 task 和 retrieve 两个字段，其中 retrieve 为可选参数。
+        
         
 
         config = config or RTConfig()
         # 根据模板类型调用不同的处理函数
         if not self._template_type:
             output_meta = {"output": {"type": None}}
-            output_messages = _simple_invoke(input, config, *args, **kwargs)
+            output_messages = _simple_invoke(prompt_input, config, *args, **kwargs)
             
         else:
             if self._template_type.split("-")[0] == "string":
-                output_messages = _from_str_template(input, config, *args, **kwargs)
+                output_messages = _from_str_template(prompt_input, config, *args, **kwargs)
             elif self._template_type.split(":")[0] == "built-in":
-                output_messages = _from_yaml_template(input, config, *args, **kwargs)
+                output_messages = _from_yaml_template(prompt_input, config, *args, **kwargs)
             output_meta = {
                 "output": self._template.meta.output, 
                 "model_args": self._template.meta.model_args
             }
         config._merge(output_meta)
-        debug("[LLMPrompt] output_messages:", output_messages)
+        debug("[ModelPrompt] output_messages:", output_messages)
         
         return NodeBus(NodeType.MODEL, output_messages, config=config)
     
@@ -342,8 +379,8 @@ if __name__ == '__main__':
     图片：{image}
     """
 
-    prompt = LLMPrompt.from_template(str_tem)
-    input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
-    prompt.operate(input)
+    prompt = ModelPrompt.from_template(str_tem)
+    prompt_input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
+    prompt.operate(prompt_input)
 
     
