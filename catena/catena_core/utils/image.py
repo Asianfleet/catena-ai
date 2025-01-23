@@ -73,7 +73,7 @@ def resize_image(img: np.ndarray, target_width: int = None, target_height: int =
         return img
     return cv2.resize(img, new_size, interpolation=cv2.INTER_AREA)
 
-def concat_images(image_list: List[str], direction: str, save_path: str):
+def concat_images(image_list: List[str], direction: str, save_path: Optional[str] = None):
     """
     拼接图像：上下（UD）或左右（LR）。
     :param image_list: 包含图像路径或 Base64 字符串的列表
@@ -115,8 +115,9 @@ def concat_images(image_list: List[str], direction: str, save_path: str):
         raise ValueError("方向参数必须为 'UD' (上下拼接) 或 'LR' (左右拼接)")
 
     # 保存拼接后的图像
-    cv2.imwrite(save_path, concatenated_image)
-    print(f"拼接后的图像已保存到：{save_path}")
+    if save_path:
+        cv2.imwrite(save_path, concatenated_image)
+        print(f"拼接后的图像已保存到：{save_path}")
     
     return concatenated_image
 

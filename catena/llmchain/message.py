@@ -1,8 +1,10 @@
+from __future__ import annotations
 from time import time
 from collections import deque
 from pydantic import BaseModel, Field
 from typing import (
     Any,
+    Callable,
     Dict, 
     List, 
     Literal, 
@@ -13,7 +15,6 @@ from typing import (
 )
 
 from ..settings import settings
-from ..catena_core.paths import System
 
 class MessageRole:
     """
@@ -23,57 +24,63 @@ class MessageRole:
     """
 
     @classmethod
-    def preprocess(cls, content: str = None):
+    def preprocess(
+        cls, 
+        content: str = None, 
+        proc: Callable[[str], str] = None
+    ) -> str:
+        if proc:
+            return proc(content)
         return content.strip().strip("\t")
 
     @classmethod
-    def mask(cls, content: str = None) -> Dict:
+    def mask(
+        cls, 
+        content: str = None, 
+        proc: Callable[[str], str] = None
+    ) -> Message:
         content = content or "你是一位优秀的助手"
-        return {"role": "system", "content": cls.preprocess(content)}
+        content = cls.preprocess(content, proc)
+        return Message(role="system", content=content)
     
     @classmethod
-    def context(cls, content: str) -> Dict:
-        content = "上下文信息：\n" + content
-        return {"role": "system", "content": cls.preprocess(content)}
+    def context(
+        cls,
+        content: str, 
+        proc: Callable[[str], str] = None
+    ) -> Message:
+        content = "上下文信息：\n" + cls.preprocess(content, proc)
+        return Message(role="system", content=content)
 
     @classmethod
-    def system(cls, content: str) -> Dict:
-        return {"role": "system", "content": cls.preprocess(content)}
+    def system(
+        cls, 
+        content: str, 
+        proc: Callable[[str], str] = None,
+        **kwargs
+    ) -> Message:
+        content = cls.preprocess(content, proc)
+        return Message(role="system", content=content, **kwargs)
 
     @classmethod
-    def assistant(cls, content: str) -> Dict:
-        return {"role": "assistant", "content": cls.preprocess(content)}
+    def assistant(
+        cls, 
+        content: str, 
+        proc: Callable[[str], str] = None
+    ) -> Message:
+        content = cls.preprocess(content, proc)
+        return Message(role="assistant", content=content)
     
     @classmethod
-    def user(cls, content: str) -> Dict:
-        return {"role": "user", "content": cls.preprocess(content)}
+    def user(
+        cls, 
+        content: str, 
+        proc: Callable[[str], str] = None,
+        **kwargs
+    ) -> Message:
+        content = cls.preprocess(content, proc)
+        return Message(role="user", content=content, **kwargs)
     
-    @classmethod
-    def user_vision(cls, text: str, image:List) -> Dict:
-        from catena_core.utils.image import to_base64, concat_images
-        if settings.prompt.image_concat_direction:
-            direction = settings.prompt.image_concat_direction
-            conact_savepath = System.DEBUG_DATA_PATH.val("image") + "/concated.png"
-            img_concated = concat_images(image, direction, conact_savepath)
-            image_base64 = to_base64(img_concated)
-            msg = {"role": "user", "content": [
-                {
-                    "type": "image_url",
-                    "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
-                },
-                {"type": "text", "text": text}
-            ]}
-        else:
-            msg = {"role": "user", "content": []}
-            for img in image:
-                image_base64 = to_base64(img)
-                msg["content"].append({
-                    "type": "image_url",
-                    "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
-                })
-            msg["content"].append({"type": "text", "text": text})
-        return msg
-
 class MessageContext(BaseModel):
     pass
 
@@ -104,23 +111,44 @@ class Message(BaseModel):
     
     # 创建时间
     created_at: int = Field(default_factory=lambda: int(time()))
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """ 将 MessageBus 对象转换为字典，用于发送给模型 """
-        _dict = self.model_dump(
-            exclude_none=True,
-            include={"role", "content"},
-        )
-        # 手动添加内容字段，即使它是 None
-        if self.content is None:
-            _dict["content"] = None
-        from enum import Enum
-        # 处理枚举类型的序列化
-        for key, value in _dict.items():
-            if isinstance(value, Enum):
-                _dict[key] = value.value
 
-        return _dict
+    @property
+    def model_message(self) -> Dict[str, Any]:
+        return self.to_model_message()
+
+    def to_model_message(self) -> Dict[str, Any]:
+        """ 将 Message 对象转换为模型消息列表 """
+        message = {"role": self.role}
+        if self.images:
+            if self.role == "assistant":
+                raise ValueError("Assistant message cannot contain images.")
+            # 处理带图片的消息
+            from ..catena_core.utils.image import to_base64, concat_images
+            if settings.prompt.image_concat_direction:
+                direction = settings.prompt.image_concat_direction
+                img_concated = concat_images(self.images, direction)
+                image_base64 = to_base64(img_concated)
+                message["content"] = [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
+                    },
+                    {"type": "text", "text": self.content}
+                ]
+                return message
+            if isinstance(self.images, list):
+                message["content"] = []
+                for img in self.images:
+                    image_base64 = to_base64(img)
+                    message["content"].append({
+                        "type": "image_url",
+                        "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
+                    })
+                message["content"].append({"type": "text", "text": self.content})
+                return message
+        # 没有图片时返回基本消息结构
+        message["content"] = self.content
+        return message
 
     def get_content_string(self) -> str:
         """Returns the content as a string."""
@@ -135,27 +163,27 @@ class Message(BaseModel):
     def printf(self):
         """ 打印 Message 对象的信息 """
         from ..catenasmith.cli_tools import info
-        info("**************** MESSAGE START ****************")
-        info(f"* Role:                       {self.role}")
-        info(f"* Content:                    {self.content}")
+        info("**************** MESSAGE OBJECT ****************")
+        info(f"* Role:                   {self.role}")
+        info(f"* Content:                {self.content}")
         if self.tool_calls is not None:
-            info(f"* Tool calls:                 {self.tool_calls}")
+            info(f"* Tool calls:             {self.tool_calls}")
         if self.tool_call_builtin is not None:
-            info(f"* Builtin tool calls:         {self.tool_call_builtin}")
+            info(f"* Builtin tool calls:     {self.tool_call_builtin}")
         if self.tool_call_id is not None:
-            info(f"* Tool call ID:               {self.tool_call_id}")
+            info(f"* Tool call ID:           {self.tool_call_id}")
         if self.audio is not None:
-            info(f"* Audio:                      {self.audio}")
+            info(f"* Audio:                  {self.audio}")
         if self.images is not None:
-            info(f"* Images:                     {self.images}")
+            info(f"* Images:                 {self.images}")
         if self.videos is not None:
-            info(f"* Videos:                     {self.videos}")
+            info(f"* Videos:                 {self.videos}")
         if self.context is not None:
-            info(f"* Context:                    {self.context}")
+            info(f"* Context:                {self.context}")
         if self.metrics is not None:
-            info(f"* Metrics:                    {self.metrics}")
-        info(f"* Created at:                 {self.created_at}")
-        info("**************** MESSAGE END ******************")
+            info(f"* Metrics:                {self.metrics}")
+        info(f"* Created at:             {self.created_at}")
+        info("**************** MESSAGE OBJECT ****************")
 
 class MessageBus(deque[Message]):
     """ 存储每个节点的 operate 函数输出 """
@@ -167,15 +195,20 @@ class MessageBus(deque[Message]):
             raise IndexError("Message is empty.")
         return self[-1]
     
+    @property
+    def model_message(self) -> List[Dict[str, Any]]:
+        """ 将 Message 对象转换为模型消息列表 """
+        return [message.to_model_message() for message in self]
+    
     @overload
-    def update(self, item: Message) -> None:
+    def add(self, item: Message) -> None:
         ...
         
     @overload
-    def update(self, **kwargs) -> None:
+    def add(self, **kwargs) -> None:
         ...
     
-    def update(self, item: Message | None = None, **kwargs) -> None:
+    def add(self, item: Message | None = None, **kwargs) -> None:
         if item is not None:
             if not isinstance(item, Message):
                 raise TypeError("Item must be of type Message")
@@ -193,10 +226,12 @@ if __name__ == "__main__":
     # python -m catena.llmchain.message
     message = Message(
         role="user",
-        content="nihao"
+        content="nihao",
+        images=[
+            "https://www.baidu.com/img/bd_logo1.png",
+            "https://www.baidu.com/img/bd_logo1.png"
+        ]
     )
-    
-    bus = MessageBus()
-    bus.update(message)
-    bus.update(role="assistant", content="nihao")
-    print(bus)
+
+    message.printf()
+    print(message.to_model_message())

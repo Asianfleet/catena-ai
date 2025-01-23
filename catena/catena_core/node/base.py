@@ -63,10 +63,18 @@ class Node(BaseModel):
         description="节点ID"
     )
     # 节点样式
-    style: Optional[Union[str, Enum]] = None                                      
+    style: Optional[Union[str, Enum]] = Field(
+        default=None,
+        init=False,
+        metadata={"description": "节点样式"}
+    )                                      
     # 节点是否可重复出现
     # 如果为True，则表示节点可以重复出现，否则不允许重复出现。
-    repeatable: bool = False
+    repeatable: bool = Field(
+        default=False,
+        init=False,
+        metadata={"description": "节点是否可重复出现"}
+    )
     
     # 无需手动初始化
     # 节点元数据

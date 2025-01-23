@@ -1,3 +1,4 @@
+import re
 from functools import wraps
 from rich.tree import Tree
 from rich.console import Console
@@ -75,25 +76,35 @@ class Formatter:
         values = [str(value) for value in values]
         console.print(cls.fc("".join(values), style))
       
-def info(*values, prefix: str = ""):
+def info(*values, prefix: Optional[str] = None):
     """ 输出运行信息 """
     if settings.debug.enable_func_level_info:
-        Formatter.printf(f"\[{prefix}.info] ", *values, style=None)
+        if prefix:
+            pre = f"\[{prefix}|info] " 
+        else:
+            match = re.search(r'\[(.*?)\]', values[0])
+            pre = f"\[{match.group(1)}|info] " if match else "\[info] "
+            newvalue = re.sub(r'\[(.*?)\]', '', values[0], count=1)
+            newvalues = (newvalue, *values[1:])
+        Formatter.printf(pre, *newvalues, style=None)
  
-def debug(*values, prefix: str = ""):
+def debug(*values, prefix: Optional[str] = None):
     """ 输出调试信息 """
     if settings.debug.enable_func_level_debug:
-        Formatter.printf(f"\[{prefix}.debug] ", *values, style="bold")       
+        pre = f"\[{prefix}.info] " if prefix else "\[info] "
+        Formatter.printf(pre, *values, style="bold")       
 
-def warning(*values, prefix: str = ""):
+def warning(*values, prefix: Optional[str] = None):
     """ 输出警告信息 """
     if settings.debug.enable_func_level_warning:
-        Formatter.printf(f"\[{prefix}.warning] ", *values, style="bold orange1")
+        pre = f"\[{prefix}.info] " if prefix else "\[info] "
+        Formatter.printf(pre, *values, style="bold orange1")
 
-def error(*values):
+def error(*values, prefix: Optional[str] = None):
     """ 输出错误信息 """
     if settings.debug.enable_func_level_error:
-        Formatter.printf(*values, style="bold red")
+        pre = f"\[{prefix}.info] " if prefix else "\[info] "
+        Formatter.printf(pre, *values, style="bold red")
        
 if __name__ == "__main__":
     # python -m catena.catenasmith.cli_tools
@@ -120,6 +131,6 @@ if __name__ == "__main__":
         live.stop()
         
     console.print("Done!") """
-    info("warning")
+    info("[111]warning")
     
     

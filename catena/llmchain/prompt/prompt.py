@@ -16,12 +16,14 @@ from pydantic import (
     Field, model_validator, create_model
 )
 
-from ...retriever import Retriever, InputRetrieve
+from ..message import Message, MessageBus, MessageRole
+#from ...retriever import Retriever, InputRetrieve
 from ...catena_core.paths import Template
-from ...catena_core.utils.utils import MessageRole
-from ...catena_core.node.base import Node, NodeBus
-from ...catena_core.alias.builtin import NodeType as Ntype
-from ...catena_core.load_tools import load_prompt, interpolate, unwarp
+from ...catena_core.node.base import Node, NodeBus, NodeCompletion
+from ...catena_core.alias.builtin import (
+    NodeType as Ntype,
+    PromptTemplateType as PType
+)
 from ...settings import info, RTConfig as RT
 from ...catenasmith.cli_tools import (
     Style as sty,
@@ -81,11 +83,11 @@ class ModelPrompt(Node):
     # 节点 ID
     node_id: Ntype = Field(default=Ntype.MODEL, init=False)
     # 消息列表
-    message: List = Field(default=[MessageRole.mask()], init=False)
+    message: MessageBus = Field(default=None, init=False)
     # 模板配置 
-    template: str = Field(default=None, init=False)
+    template: KvConfig = Field(default=None, init=False)
     # 模板类型
-    template_type: str = Field(default=None, init=False)
+    template_type: PType = Field(default=PType.UD, init=False)
     
     model_config = ConfigDict(
         protected_namespaces=(),
@@ -96,19 +98,8 @@ class ModelPrompt(Node):
     def node_id(self) -> Ntype:
         return self.node_id
     
-    @property
-    def message(self) -> List:
-        return self.message
-    
-    @message.setter
-    def message(self, messages: List):
-        if not isinstance(messages, List):
-            raise TypeError("Message must be list type.")
-        else:
-            self.message = messages
-    
-    @staticmethod
-    def load_prompt(label: str, resolve: bool = False) -> Union[KvConfig, None]:
+    @classmethod
+    def load_prompt(cls, label: str, resolve: bool = False) -> Union[KvConfig, None]:
         if len(label.split(".")) == 2:
             file = label.split(".")[0]
             label = label.split(".")[1]
@@ -121,13 +112,16 @@ class ModelPrompt(Node):
             return None
     
     @classmethod
-    def from_template(cls, template: Union[str, Enum], *args, **kwargs):
+    def from_template(cls, template: str, *args, **kwargs):
         """ 从模板配置中创建 PromptTemplate 实例 """
-        instance = cls()  # 创建实例
-        instance._template = load_prompt(template)
-        if instance._template != "invalid label":
-            info("[ModelPrompt.from_template] 使用内建模板")
-            instance._template_type = "built-in:" + template
+        # 1、创建实例，加载模板
+        instance = cls()  
+        instance.template = cls.load_prompt(template)
+        # 2、判断模板类型并做出相应处理
+        info("[ModelPrompt.from_template] instance.template:", instance.template)
+        if instance.template:
+            info("[ModelPrompt.from_template] 使用 yaml 模板")
+            instance.template_type = PType.YAML
         else:
             info("[ModelPrompt.from_template] 使用字符串模板")
             
@@ -147,8 +141,8 @@ class ModelPrompt(Node):
                ``` 
             ######################################################################################
             """
-            
-            def to_omega(match_obj):
+        
+            def to_cref(match_obj: re.Match):
                 """ 将模板中的占位符转换为 Catenaconf 引用 """
                 content = match_obj.group(0)[1:-1]  # 获取 {} 内的内容，去掉 {} 
                 if content != "image":  # 对于非图片参数，添加 Catenaconf 引用
@@ -160,21 +154,14 @@ class ModelPrompt(Node):
             # 1、如果用户想要指定图片上下文，但是没有明确使用 {image} 进行标记，则不能做到优雅地
             #    切换对应的大模型提示词格式。 目前打算添加通过大模型先进行格式整理，与推测
             # 2、目前针对内建模板的 retriver_call 以及 schema、parse_call 字段还不能灵活指定
+            # JSON 模式
             
-            args = re.findall(r'\{(.*?)\}', template)   # 提取字符串中的变量占位符
-            omega = re.sub(r'\{.*?\}', to_omega, template)  # 将占位符替换为 Catenaconf 引用
-            if "image" not in args:
-                print("[ModelPrompt.from_template] 纯文本信息")
-                omega_msg = [MessageRole.mask(), MessageRole.user(omega)]
-                instance._template_type = "string-template"
-            else:
-                print("[ModelPrompt.from_template] 含视觉信息")
-                args.remove("image")    # 移除 image 参数,因为大模型接受含有图片的消息列表的格式不同
-                omega_msg = None
-                instance.omega = omega
-                instance._template_type = "string-template-vision"
-            instance._template = Catenaconf.create({# 创建 Catenaconf 格式的模板对象
-                "message": omega_msg,
+            args: List = re.findall(r'\{(.*?)\}', template)   # 提取字符串中的变量占位符
+            templ_ref: str = re.sub(r'\{.*?\}', to_cref, template)  # 将占位符替换为 Catenaconf 引用
+            instance.template_type = PType.STR
+           
+            instance.template = Catenaconf.create({# 创建 Catenaconf 格式的模板对象
+                "system": templ_ref,
                 "meta": {
                     "retriver_call": None,
                     "model_args": None,
@@ -184,8 +171,7 @@ class ModelPrompt(Node):
                         "schema": None,
                         "parse_call": None
                     }
-                },
-                "omega": omega
+                }
             })
 
         return instance
@@ -223,7 +209,7 @@ class ModelPrompt(Node):
         return schema
 
     
-    def _simple_invoke(self, prompt_input: Union[str, Dict], *args, **kwargs) -> List:
+    def _simple_invoke(self, prompt_input: Union[str, Dict]) -> MessageBus:
         """ 
         无模板模式，此时输入应为两种情况：
         1. 字符串，直接作为用户输入；
@@ -231,36 +217,37 @@ class ModelPrompt(Node):
         """
         prompt_input = prompt_input or self.prompt_input
         if isinstance(prompt_input, str):
-            message = [*self.message, MessageRole.user(prompt_input)]
+            message = MessageBus(
+                [MessageRole.mask(), MessageRole.user(content=prompt_input)]
+            )
             return message
         elif isinstance(prompt_input, dict):
+            message = MessageBus([MessageRole.mask()])
             # 验证字典数据
             try:
                 prompt_input = SimpleInputArgs(**prompt_input)  # 使用字典解包进行验证
             except ValidationError:
                 raise
-            if prompt_input["retrieve"]:
-                try:
-                    retrieve = InputRetrieve(**prompt_input["retrieve"])  # 使用字典解包进行验证
-                except ValidationError as e:
-                    print(e.json())
-
-                with Retriever(retrieve["setter"]) as retrv:
-                    retrieved = retrv.task(prompt_input["task"], **retrieve["args"])
+            #if prompt_input["retrieve"]:
+            #    try:
+            #        retrieve = InputRetrieve(**prompt_input["retrieve"])  # 使用字典解包进行验证
+            #    except ValidationError as e:
+            #        print(e.json())
+            #    
+            #    with Retriever(retrieve["setter"]) as retrv:
+            #        retrieved = retrv.task(prompt_input["task"], **retrieve["args"])
                     
-            self.message.append(MessageRole.context(retrieved))
-            self.message.append(MessageRole.user(prompt_input["task"]))
+            #self.message.append(MessageRole.context(retrieved))
+            message.append(MessageRole.user(prompt_input["task"]))
             
-            return self.message
+            return message
 
-        
-
-    def _from_yaml_template(self, prompt_input: Union[str, Dict], *args, **kwargs) -> List:
-        """ 
-        有模板模式（从 yaml 文件中读取模板），此时输入应为两种情况：
-        1. 字符串，直接作为用户输入，此时内建模板必须只包含一个参数。
-        2. 字典，包含内建模板的所有参数，其中键为参数名称，值为参数的值。
-        """
+    """ def _yaml_templ_invoke(self, prompt_input: Union[str, Dict]) -> List:
+        #
+        #有模板模式（从 yaml 文件中读取模板），此时输入应为两种情况：
+        #1. 字符串，直接作为用户输入，此时内建模板必须只包含一个参数。
+        #2. 字典，包含内建模板的所有参数，其中键为参数名称，值为参数的值。
+        #
         mapping = {key: (str, value) for key, value in self.template.meta.param.items()}
         TempateInputPrompt = create_model(
             "TempateInputPrompt",
@@ -291,87 +278,113 @@ class ModelPrompt(Node):
         self.message = unwarp(self._template.message)
 
 
-        return self.message
+        return self.message """
 
-    
-    
-    def _from_str_template(prompt_input, config = None, *args, **kwargs):
+    def _str_templ_invoke(self, prompt_input) -> MessageBus:
         """ 
         有模板模式（使用字符串动态创建模板），此时输入应为两种情况：
         1. 字符串，直接作为模板字符串；
         2. 字典，包含模板字符串和模板参数。 
         """
-        mapping = {# 从模板中获取参数
-            key: (str, value) for key, value in self._template.meta.param.items()
+        # 从模板中获取参数
+        mapping = {
+            key: (Union[str, List], value) for key, value in self.template.meta.param.items()
         }
-        TempateInputPrompt = create_model(# 创建模板参数数据验证模型
+        # 创建模板参数数据验证模型
+        TempateInputPrompt = create_model(
             "TempateInputPrompt",
             **mapping,
             __base__=BaseModel
         )
-
-        if isinstance(prompt_input, dict):  # 如果输入为字典
+        system_message: Message = MessageRole.system(content="")
+        if isinstance(prompt_input, dict):
+            # 验证数据并生成参数字典
             try:
-                prompt_input = TempateInputPrompt(**prompt_input) # 进行数据验证
-                prompt_input = prompt_input.model_dump()          # 通过验证之后生成字典
-            except ValidationError as e:
-                print(e.json())
-            for arg, value in prompt_input.items():            # 遍历传入参数
-                self._template.meta.param[arg] = value  # 将传入参数字典按照键进行匹配，赋值给模板参数
-                if arg == "image" and value:            # 处理图片参数
-                    if not isinstance(value, List):     # 如果不是列表，则转换为列表
-                        value = [value]
-                    self._template.message = [MessageRole.user_vision(# 使用包含视觉信息的用户消息
-                        unwarp(self._template.omega),
-                        value
-                    )]
-        else:   # 如果输入为字符串，此时模板必须只有一个参数
-            assert len(self._template.meta.param) == 1, ""
-            key = list(unwarp(self._template.meta.param).keys())
-            self._template.meta.param[key[0]] = prompt_input
-
+                prompt_input: BaseModel = TempateInputPrompt(**prompt_input)
+                args_dict: Dict = prompt_input.model_dump()  
+            except ValidationError:
+                raise  
+            for arg, value in args_dict.items():        # 遍历传入参数
+                if isinstance(value, List):
+                    self.template.meta.param[arg] = "已给出"
+                    system_message.images = value
+                elif isinstance(value, str):
+                    # 判断是否是base64或url
+                    if value.startswith(('http://', 'https://')):
+                        self.template.meta.param[arg] = "已给出"
+                        system_message.images = value
+                    else:
+                        self.template.meta.param[arg] = value
+        # 此时模板必须只有一个参数
+        else:   
+            if len(self.template.meta.param) != 1:
+                raise ValueError("模板参数数量错误")
+            if isinstance(prompt_input, List):
+                key = list(self.template.meta.param.keys())
+                self.template.meta.param[key[0]] = prompt_input
+            elif isinstance(prompt_input, str):
+                    # 判断是否是base64或url
+                    if prompt_input.startswith(('http://', 'https://')):
+                        self.template.meta.param[arg] = "已给出"
+                        system_message.images = prompt_input
+                    else:
+                        self.template.meta.param[arg] = prompt_input
+        
         #TODO:RAG支持还未实现
-        if self._template.meta.retriver_call:
+        if self.template.meta.retriver_call:
             pass
 
-        interpolate(self._template)
-        self.message = unwarp(self._template.message)
+        Catenaconf.resolve(self.template)
+        system_message.content = self.template.system
 
-        return self.message
+        return MessageBus([system_message])
 
-    @cli_visualize
-    def operate(self, prompt_input: NodeBus) -> NodeBus:
-       
+    #@cli_visualize
+    def operate(self, input: Union[NodeBus, Dict, str]) -> NodeCompletion:
+        """  """
         
-        
-
-        config = config or RTConfig()
-        # 根据模板类型调用不同的处理函数
-        if not self._template_type:
-            output_meta = {"output": {"type": None}}
-            output_messages = _simple_invoke(prompt_input, config, *args, **kwargs)
-            
+        if not isinstance(input, NodeBus):
+            bus = NodeBus()
+            bus.add(main_data=input)
         else:
-            if self._template_type.split("-")[0] == "string":
-                output_messages = _from_str_template(prompt_input, config, *args, **kwargs)
-            elif self._template_type.split(":")[0] == "built-in":
-                output_messages = _from_yaml_template(prompt_input, config, *args, **kwargs)
+            bus = input
+        
+        input_data : NodeCompletion = bus.latest
+        prompt_input = input_data.main_data
+        config = input_data.extra_data
+        
+        # 根据模板类型调用不同的处理函数
+        if self.template_type == PType.UD:
+            output_meta = {"output": {"type": None}}
+            output_messages = self._simple_invoke(prompt_input)
+        else:
+            if self.template_type == PType.STR:
+                output_messages = self._str_templ_invoke(prompt_input)
+            #elif self.template_type == PType.YAML:
+            #    output_messages = self._yaml_templ_invoke(prompt_input)
             output_meta = {
-                "output": self._template.meta.output, 
-                "model_args": self._template.meta.model_args
+                "output": self.template.meta.output, 
+                "model_args": self.template.meta.model_args
             }
+        self.message = output_messages
         config._merge(output_meta)
         debug("[ModelPrompt] output_messages:", output_messages)
         
-        return NodeBus(NodeType.MODEL, output_messages, config=config)
-    
+        bus.add(
+            type=Ntype.PRM,
+            main_data=output_messages,
+            extra_data=config
+        )
+        
+        return bus.latest
+            
 class PromptBuiltIn(Node):   
     
     pass
 
 
 if __name__ == '__main__':
-    # python -m src.modules.agent.llmchain.prompt
+    # python -m catena.llmchain.prompt.prompt
     # settings.configure(disable_visualize=True)
     str_tem = """
     下面你要完成一个任务，按照给定的要求，并且参照给定的图片。
@@ -380,7 +393,13 @@ if __name__ == '__main__':
     """
 
     prompt = ModelPrompt.from_template(str_tem)
-    prompt_input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
-    prompt.operate(prompt_input)
-
     
+    prompt_input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
+    completion = prompt.operate(prompt_input)
+
+    #print(completion.main_data.latest.to_model_message())
+    
+    pm = ModelPrompt(prompt_input="你好")
+    msg = pm.operate("你好").main_data
+    print(msg)
+    print(msg.model_message)

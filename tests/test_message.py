@@ -31,12 +31,12 @@ class TestMessage(unittest.TestCase):
 
     def test_message_bus(self):
         # 测试MessageBus更新和获取最新消息
-        self.bus.update(self.message)
+        self.bus.add(self.message)
         self.assertEqual(len(self.bus), 1)
         self.assertEqual(self.bus.latest, self.message)
 
         # 测试通过kwargs更新
-        self.bus.update(role="assistant", content="你好，有什么可以帮您？")
+        self.bus.add(role="assistant", content="你好，有什么可以帮您？")
         self.assertEqual(len(self.bus), 2)
         self.assertEqual(self.bus.latest.role, "assistant")
         self.assertEqual(self.bus.latest.content, "你好，有什么可以帮您？")

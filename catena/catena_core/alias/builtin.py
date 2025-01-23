@@ -27,4 +27,12 @@ class MemoryType(Enum):
     WINDOW = "window"
     TOPIC = "topic"
     
+class PromptTemplateType(Enum):
+    """ 内置模板类型 """
+    
+    YAML = "yaml"
+    STR = "str"
+    STRV = "str-vision"
+    UD = "undefined"
+    
 CURRENT_VERSION = "0.0.1"

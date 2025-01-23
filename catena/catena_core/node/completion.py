@@ -57,7 +57,7 @@ class NodeCompletion(BaseModel):
         return prop_list
     
     @overload
-    def update(self, completion: NodeCompletion) -> None:
+    def update(self, item: NodeCompletion) -> None:
         ...
         
     @overload
@@ -91,14 +91,14 @@ class NodeBus(deque[Dict[str, NodeCompletion]]):
     
     
     @overload
-    def update(self, item: NodeCompletion) -> None:
+    def add(self, item: NodeCompletion) -> None:
         ...
         
     @overload
-    def update(self, **kwargs) -> None:
+    def add(self, **kwargs) -> None:
         ...
     
-    def update(self, item: NodeCompletion | None = None, **kwargs) -> None:
+    def add(self, item: NodeCompletion | None = None, **kwargs) -> None:
         if item is not None:
             if not isinstance(item, NodeCompletion):
                 raise TypeError("Item must be of type NodeCompletion")

@@ -206,22 +206,6 @@ class OpenAIOrigin(Model):
  
         return OpenAI(**client_params)
     
-    def resolve_message(self, message: MessageBus) -> Dict[str, Any]:
-        """
-        Format a message into the format expected by OpenAI.
-
-        Args:
-            message (Message): The message to format.
-
-        Returns:
-            Dict[str, Any]: The formatted message.
-        """
-        if message.role == "user":
-            if message.images is not None:
-                message = self.add_images_to_message(message=message, images=message.images)
-
-        return message.to_dict()
-        
     def update_usage_metrics(
         self, assistant_message: Message, metrics: Metrics, response_usage: Optional[CompletionUsage]
     ) -> None:
@@ -334,7 +318,7 @@ class OpenAIOrigin(Model):
                     # 3、解析 API 响应
                     return self.init_client().beta.chat.completions.parse(
                         model=self.model,
-                        messages=[self.resolve_message(m) for m in messages],  # type: ignore
+                        messages=messages.model_message,  # type: ignore
                         **self.completion_args,
                     )
                 else:
@@ -344,7 +328,7 @@ class OpenAIOrigin(Model):
         # 4、否则，直接返回 API 响应
         return self.init_client().chat.completions.create(
             model=self.model,
-            messages=[self.resolve_message(m) for m in messages],  # type: ignore
+            messages=messages.model_message,  # type: ignore
             **self.completion_args
         )
     
@@ -383,7 +367,7 @@ class OpenAIOrigin(Model):
         # 4、生成 assistant 消息
         assistant_message = self.format_assistant_message(response_message, model_metrics, response_usage)
         # 5、将 assistant 消息添加到消息列表中
-        messages.update(assistant_message)
+        messages.add(assistant_message)
         # 在控制台展示
         # -*- Log response and metrics
         assistant_message.printf()
@@ -426,17 +410,18 @@ class OpenAIOrigin(Model):
 if __name__ == "__main__":
     # python -m catena.llmchain.model.oai.oai
     oai_model = OpenAIOrigin()
-    cpl = oai_model.create_completion(messages=[MessageBus(role="user", content="你好")])
+    #cpl = oai_model.create_completion(messages=MessageBus([Message(role="user", content="你好")]))
     class ResponseFormat(BaseModel):
             answer: str   
             reason: str
                  
     oai_model.response_format = ResponseFormat
     oai_model.structured_outputs = True
-    messages = [MessageBus(
+    messages = MessageBus([Message(
         role="user", 
         content="星球是什么形状的？请按给定格式输出"
-    )]
+    )])
+    print(messages.model_message)
     response = oai_model.create_completion(messages)
     event = response.choices[0].message.parsed
     print(event)
