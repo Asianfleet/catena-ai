@@ -5,7 +5,7 @@ from ..base import Model
 
 from catena_core.alias.builtin import ModelProvider as Provider
 
-class Qwen(Model):
+class TongYi(Model):
     """ 通义千问模型，使用 openai 作为 SDK """
     
     # 模型提供方
@@ -16,7 +16,7 @@ class Qwen(Model):
         
     def get_client(self):
         self.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        self.client = Op
+        self.client = None
     
     @model_validator(mode="after")
     def validate_model_args(cls, values) -> None:
@@ -24,7 +24,7 @@ class Qwen(Model):
         
     
     
-class Qwen_DashScope(Qwen):
+class TongYi_DashScope(TongYi):
     """ 通义千问模型，使用 dashscope 作为 SDK """
     
     # 模型提供方
