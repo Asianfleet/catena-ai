@@ -1,4 +1,5 @@
 from __future__ import annotations
+import copy
 from time import time
 from collections import deque
 from pydantic import BaseModel, Field
@@ -107,7 +108,7 @@ class Message(BaseModel):
     context: Optional[MessageContext] = None
     
     # 模型单次调用性能信息
-    metrics: Optional[Any] = None
+    metrics: Optional[Dict] = Field(default_factory=dict)
     
     # 创建时间
     created_at: int = Field(default_factory=lambda: int(time()))
@@ -160,30 +161,31 @@ class Message(BaseModel):
             return json.dumps(self.content)
         return ""
 
-    def printf(self):
+    def printf(self, **kwargs):
         """ 打印 Message 对象的信息 """
-        from ..catenasmith.cli_tools import info
-        info("**************** MESSAGE OBJECT ****************")
-        info(f"* Role:                   {self.role}")
-        info(f"* Content:                {self.content}")
-        if self.tool_calls is not None:
-            info(f"* Tool calls:             {self.tool_calls}")
-        if self.tool_call_builtin is not None:
-            info(f"* Builtin tool calls:     {self.tool_call_builtin}")
-        if self.tool_call_id is not None:
-            info(f"* Tool call ID:           {self.tool_call_id}")
-        if self.audio is not None:
-            info(f"* Audio:                  {self.audio}")
-        if self.images is not None:
-            info(f"* Images:                 {self.images}")
-        if self.videos is not None:
-            info(f"* Videos:                 {self.videos}")
-        if self.context is not None:
-            info(f"* Context:                {self.context}")
-        if self.metrics is not None:
-            info(f"* Metrics:                {self.metrics}")
-        info(f"* Created at:             {self.created_at}")
-        info("**************** MESSAGE OBJECT ****************")
+        from ..catenasmith.cli_tools import info, info_condition
+        with info_condition(settings.visualize.message_metrics, **kwargs):
+            info("**************** MESSAGE OBJECT ****************")
+            info(f"* Role:                   {self.role}")
+            info(f"* Content:                {self.content}")
+            if self.tool_calls is not None:
+                info(f"* Tool calls:             {self.tool_calls}")
+            if self.tool_call_builtin is not None:
+                info(f"* Builtin tool calls:     {self.tool_call_builtin}")
+            if self.tool_call_id is not None:
+                info(f"* Tool call ID:           {self.tool_call_id}")
+            if self.audio is not None:
+                info(f"* Audio:                  {self.audio}")
+            if self.images is not None:
+                info(f"* Images:                 {self.images}")
+            if self.videos is not None:
+                info(f"* Videos:                 {self.videos}")
+            if self.context is not None:
+                info(f"* Context:                {self.context}")
+            if self.metrics is not None:
+                info(f"* Metrics:                {self.metrics}")
+            info(f"* Created at:             {self.created_at}")
+            info("**************** MESSAGE OBJECT ****************")
 
 class MessageBus(deque[Message]):
     """ 存储每个节点的 operate 函数输出 """
@@ -219,6 +221,30 @@ class MessageBus(deque[Message]):
         else:
             raise ValueError("Must provide either Message object or kwargs")
         
+    def deepcopy(self) -> MessageBus:
+        """ 深度复制 MessageBus 对象 """
+        bus = MessageBus()
+        for message in self:
+            bus.add(copy.deepcopy(message))
+        return bus
+        
+    def extend(self, item: Union[Message, MessageBus]) -> None:
+        """往队列右侧添加一个Message或MessageBus对象
+        
+        Args:
+            item: Message或MessageBus对象
+                
+        Raises:
+            TypeError: 当输入类型不是Message或MessageBus时抛出
+        """
+        if isinstance(item, Message):
+            super().append(item)
+        elif isinstance(item, MessageBus):
+            for msg in item:
+                super().append(msg)
+        else:
+            raise TypeError("Item must be of type Message or MessageBus")
+
     def __call__(self):
         return self.latest
 

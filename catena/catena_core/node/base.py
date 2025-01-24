@@ -22,9 +22,9 @@ from ..callback.node_callback import (
 from ...error.chainerr import *
 from ...settings import (
     settings, 
-    RTConfig as RT,
-    debug
+    RTConfig as RT
 )
+from ...catenasmith.cli_tools import debug, warning
 
 class NodeExtraMetaData(BaseModel):
     """ Node 的元数据类 """
@@ -249,6 +249,10 @@ class NodeChain(BaseModel):
         ],
     ) -> NodeChain:
         return self.__call__(other)
+    
+    def __rrshift__(self, other: Any) -> NodeChain:
+        self.chain = [encapsulate(other)] + self.chain
+        return self
 
     # TODO: 添加节点之间的连接关系检查机制
     def compile(self):
@@ -275,9 +279,9 @@ class NodeChain(BaseModel):
                 self.chain_id: List = [node.nid for node in self.chain]
                 self.chain_name: List = [node.signature for node in self.chain]
                 self.chain_sig: List = [node.signature for node in self.chain]
-                print(self.chain_id)
-                print(self.chain_name)
-                print(self.chain_sig)
+                debug(self.chain_id)
+                debug(self.chain_name)
+                debug(self.chain_sig)
                 # 确保节点类的唯一性
                 if (
                     len(self.chain_id) != len(set(self.chain_id)) 
@@ -318,7 +322,12 @@ class NodeChain(BaseModel):
                 # 4、获取回调函数的目标节点
                 # 如果有该参数，则获取目标节点的索引，执行对应的回调函数
                 if cb_args["target"]:   
-                    index = self.chain_id.index(cb_args["target"])
+                    try:
+                        index = self.chain_id.index(cb_args["target"])
+                    except ValueError:
+                        warning("[handle_callback] target node not found, use previous node")
+                        index = node_idx - 1
+                        cb_args["name"] = "default"
                 # 否则，获取上一个节点的索引，执行上一个节点的回调函数    
                 else:   
                     index = node_idx - 1
@@ -359,8 +368,9 @@ class NodeChain(BaseModel):
         
         # 编译整个链路，确保链路可执行
         self.compile()  
+        debug("[NodeChain.operate] chain:\n", "\n".join([str(node) for node in self.chain]))
         # 将输出作为第一个 
-        self.Bus.update(main_data=input)
+        self.Bus.add(main_data=input)
 
         # 遍历链路中的节点
         for index, node in enumerate(self.chain):
@@ -370,9 +380,9 @@ class NodeChain(BaseModel):
             node.extra_metadata.Input = self.Bus.latest 
             # 3、执行节点，并把节点输出在 NodeBus 中更新
             node_completion = node.operate(self.Bus.latest)  
-            self.Bus.update(node_completion)
+            self.Bus.add(node_completion)
             # 4、设置节点的输出
-            node.extra_metadata.Output = self.Bus.latest
+            node.extra_metadata.Output = node_completion
             debug(
                 "[NodeChain.operate] node:", node.signature, 
                 "output:", node.extra_metadata.Output
@@ -480,28 +490,34 @@ def encapsulate(obj: Any) -> Node:
         # 如果对象是可调用对象（例如函数或者实现 __call__ 方法的类），创建一个 Node 实例
         debug("[encapsulate] obj is a callable object")
         class SimpleNode(Node):
-            node_id = NodeType.WRAPPED
-            def operate(self, input: NodeBus) -> None:
-                obj_input = input.latest.main_data
-                input.update(main_data=obj(obj_input))
+            node_id: NodeType = NodeType.WRAPPED
+            def operate(self, input: NodeCompletion) -> NodeCompletion:
+                obj_input = input.main_data
+                output = NodeCompletion(main_data=obj(obj_input))
+                return output
         result = SimpleNode()
     elif isinstance(obj, (dict, str)): 
         # 如果对象是字典或字符串，创建一个Node实例
         debug("[encapsulate] obj is a dict or str")
         class SimpleNode(Node):
-            node_id = NodeType.WRAPPED
-            def operate(self, input: NodeBus) -> None:
-                input.update(main_data=obj)
+            node_id: NodeType = NodeType.WRAPPED
+            def operate(self, input: Any) -> NodeCompletion:
+                output = NodeCompletion(main_data=obj)
+                return output
+                
         result = SimpleNode()
     else:
         # 如果对象不是 Node 或可调用对象，直接返回一个简单的 Node 实例
         debug("[encapsulate] obj is a simple object")
         class SimpleNode(Node):
-            node_id = NodeType.WRAPPED
-            def operate(self, input: NodeBus) -> None:
+            node_id: NodeType = NodeType.WRAPPED
+            def operate(self, input: NodeCompletion) -> NodeCompletion:
                 if hasattr(obj, "operate"):  # 如果对象有 operate 方法，则调用该方法
-                    obj.operate(input)
-                input.update(main_data=obj)
+                    result = obj.operate(input)
+                    output = NodeCompletion(main_data=result)
+                else:
+                    output = NodeCompletion(main_data=obj)
+                return output
         result = SimpleNode()
     return result
 

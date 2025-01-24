@@ -35,7 +35,7 @@ class Model(Node):
     # 模型提供方
     provider: Provider = None
     # 模型指标
-    metrics: Optional[Metrics] = None
+    metrics: Optional[Dict] = Field(default_factory=dict, init=False)
     # openai 风格的工具列表
     tools: Optional[List[Dict]] = None
     # 工具调用方式。

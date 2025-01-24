@@ -1,6 +1,5 @@
 from enum import Enum
-from collections import deque
-from dataclasses import dataclass, field
+from pydantic import Field
 from typing import (
     Dict, 
     List, 
@@ -14,37 +13,42 @@ from ...catenasmith.cli_tools import (
 )
 from ...catenasmith.visualize.cli_visualize import cli_visualize
 
-from ...settings import RTConfig
-from ...catena_core.utils.utils import MessageRole
-from ...catena_core.node.base import Node, NodeBus
+from ..message import Message, MessageBus, MessageRole
+from ...catena_core.node.base import Node, NodeBus, NodeCompletion
 from ...catena_core.callback.node_callback import node_callback
 from ...catena_core.alias.builtin import NodeType, MemoryType
 
 class Memory(Node):
     pass
 
-@dataclass
 class InfMemory(Memory):
     """
     默认的记忆类，可以存储任意类型的消息，包括系统消息和用户消息。
     """
     
-    node_id: Enum = field(default=NodeType.MEM, init=False, metadata={"disciption": "节点id"})
-    system_prompt: List[str] = field(default=None, metadata={"disciption": "系统提示语"})
-    chat_message: List[Dict] = field(default_factory=list, init=True, metadata={"disciption": "对话消息"})
-    messages: List[Dict] = field(default_factory=list, init=False, metadata={"disciption": "全部消息"})
-    system_message: List[Dict] = field(default_factory=list, init=False, metadata={"disciption": "系统消息"})
+    system_prompt: Union[List[str], str] = Field(
+        default=None, metadata={"disciption": "系统提示语"}
+    )
+    chat_message: MessageBus = Field(
+        default_factory=MessageBus, init=False, metadata={"disciption": "对话消息"}
+    )
+    messages: MessageBus = Field(
+        default_factory=MessageBus, init=False, metadata={"disciption": "全部消息"}
+    )
+    system_message: MessageBus = Field(
+        default_factory=MessageBus, init=False, metadata={"disciption": "系统消息"}
+    )
+    node_id: Enum = Field(default=NodeType.MEM, init=False, metadata={"disciption": "节点id"})
+    style: Enum = Field(default=sty.BC, init=False, metadata={"disciption": "节点样式"})
                
-    def __post_init__(self):
+    def model_post_init(self, __pydantic_extra__=None):
         if self.system_prompt:
-            self.system_message = [MessageRole.system(prompt) for prompt in self.system_prompt]
-        super().__init__(sty.BC)
+            prompts = [self.system_prompt] if isinstance(self.system_prompt, str) else self.system_prompt
+            self.system_message = MessageBus(
+                [MessageRole.system(prompt) for prompt in prompts]
+            )
 
-    @property
-    def node_id(self):
-        return self.node_id
-
-    def add(self, message: Union[Dict, List[Dict]]):
+    def add(self, message: Union[Message, MessageBus]):
         """
         将消息添加到记忆中。
 
@@ -57,20 +61,22 @@ class InfMemory(Memory):
         :return: 扩展后的系统消息列表。
         :rtype: List[Dict]
         """
-        system_message = self.system_message.copy()
-        chat_message = self.chat_message.copy()
+        system_message = self.system_message.deepcopy()
+        chat_message = self.chat_message.deepcopy()
 
-        def sortmsg(msg: Dict):
+        def sortmsg(msg: Message):
             """
             根据消息中的角色字段对消息进行分类，并添加到对应的列表中。
             """
-            if msg["role"] == "system":
-                if msg["content"] not in [msg["content"] for msg in system_message]:
-                    system_message.append(msg)
+            if msg.role == "system":
+                if msg.content not in [msg.content for msg in system_message]:
+                    system_message.add(msg)
             else:
-                chat_message.append(msg)
+                chat_message.add(msg)
         
-        messages = [message] if isinstance(message, dict) else message
+        messages = (
+            MessageBus([message]) if isinstance(message, Message) else message
+        )
         for msg in messages:
             sortmsg(msg)
         system_message.extend(chat_message)
@@ -84,39 +90,45 @@ class InfMemory(Memory):
 
         """
         # 定义一个内部函数，用于根据消息的角色将其添加到不同的消息列表中
-        def sortmsg(msg):
+        def sortmsg(msg: Message):
             # 如果消息的角色为系统消息
-            if msg["role"] == "system":
+            if msg.role == "system":
                 # 将消息添加到系统消息列表中
-                if msg["content"] not in [msg["content"] for msg in self.system_message]:
+                if msg.content not in [msg.content for msg in self.system_message]:
                     # 如果消息的内容不在系统消息列表中，则添加
                     self.system_message.append(msg)
             else:
                 # 否则将消息添加到其他消息列表中
                 self.chat_message.append(msg)
-        messages = [message] if isinstance(message, dict) else message
+        messages = MessageBus([message]) if isinstance(message, Message) else message
         for msg in messages:
             # 遍历列表中的每个消息，调用sortmsg函数进行分类处理
             sortmsg(msg)
-        self.messages = [*self.system_message, *self.chat_message]
+        self.messages = MessageBus([*self.system_message, *self.chat_message])
         debug("[add_] messages:", self.messages)
 
-    def pop(self):
-        self.messages = self.messages[:-2]
+    def pop(self) -> None:
+        """移除最后两条消息
+        
+        从messages中移除最后两条消息。如果messages中元素少于2条，
+        则清空messages。
+        """
+        if len(self.messages) >= 2:
+            self.messages = MessageBus(list(self.messages)[:-2])
+        else:
+            self.messages.clear()
     
     def clear(self):
-        self.messages = []
+        self.messages = MessageBus([])
 
-    @cli_visualize
-    def operate(self, input: List, config: RTConfig = None, *args, **kwargs):
+    #@cli_visualize
+    def operate(self, input: NodeCompletion) -> NodeCompletion:
         """ 大模型记忆类的启动函数 """
-        self.add_(input)
-        return NodeBus(
-            NodeType.MODEL, 
-            main=self.messages, 
-            args=args, 
-            kwargs=kwargs, 
-            config=config
+        prompt_messages: MessageBus = input.main_data
+        self.add_(prompt_messages)
+        return NodeCompletion(
+            type=NodeType.MODEL, 
+            main_data=self.messages
         )
 
 class WindowMemory(Memory):
@@ -138,6 +150,8 @@ def init_memory(memory_type: MemoryType = MemoryType.INF):
 
 
 if __name__ == "__main__":
-    # python -m src.modules.agent.llm.memory
-    print("llm memory test")
-   
+    # python -m catena.llmchain.memory.memory
+    mem = InfMemory(system_prompt="你是一个助手")
+    mem.add_(MessageRole.user("你好"))
+    mem.add_(MessageRole.system("系统提示词"))
+    print(mem.messages)

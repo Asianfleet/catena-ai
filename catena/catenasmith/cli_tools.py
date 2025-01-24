@@ -4,6 +4,7 @@ from rich.tree import Tree
 from rich.console import Console
 from typing import Optional, Union
 from enum import Enum
+from contextlib import contextmanager
 from ..settings import settings
 
 class Style(Enum):
@@ -76,9 +77,30 @@ class Formatter:
         values = [str(value) for value in values]
         console.print(cls.fc("".join(values), style))
       
+condition = "None"
+
+@contextmanager
+def info_condition(temp_condition, **kwargs):
+    if kwargs.get("level", "User") == "Code":
+        global condition
+        original_condition = condition
+        condition = temp_condition
+        try:
+            yield
+        finally:
+            condition = original_condition
+    else:
+        yield
+      
 def info(*values, prefix: Optional[str] = None):
     """ 输出运行信息 """
-    if settings.debug.enable_func_level_info:
+    global condition
+    condition = (
+        condition 
+        if condition != "None" 
+        else settings.debug.enable_func_level_info
+    )
+    if condition:
         if prefix:
             pre = f"\[{prefix}|info] " 
         else:
@@ -97,8 +119,14 @@ def debug(*values, prefix: Optional[str] = None):
 def warning(*values, prefix: Optional[str] = None):
     """ 输出警告信息 """
     if settings.debug.enable_func_level_warning:
-        pre = f"\[{prefix}.info] " if prefix else "\[info] "
-        Formatter.printf(pre, *values, style="bold orange1")
+        if prefix:
+            pre = f"\[{prefix}|warning] " 
+        else:
+            match = re.search(r'\[(.*?)\]', values[0])
+            pre = f"\[{match.group(1)}|warning] " if match else "\[warning] "
+            newvalue = re.sub(r'\[(.*?)\]', '', values[0], count=1)
+            newvalues = (newvalue, *values[1:])
+        Formatter.printf(pre, *newvalues, style="bold orange1")
 
 def error(*values, prefix: Optional[str] = None):
     """ 输出错误信息 """
@@ -131,6 +159,7 @@ if __name__ == "__main__":
         live.stop()
         
     console.print("Done!") """
-    info("[111]warning")
+    with info_condition(settings.visualize.message_metrics):
+        info("[111]warning")
     
     

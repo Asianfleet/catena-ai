@@ -78,6 +78,8 @@ class NodeCallbackRegister:
                 result = bound_method(main_input, *args, **kwargs)
                 return result
             else:
+                if method_name == "default":
+                    return None
                 raise NodeCallbackNotFoundError()
         except NodeCallbackNotFoundError:
             return None

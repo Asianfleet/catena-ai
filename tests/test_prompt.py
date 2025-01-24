@@ -1,6 +1,6 @@
 import unittest
 
-from ..catena.llmchain.prompt import ModelPrompt
+from catena.llmchain.prompt import ModelPrompt
 
 class TestPrompt(unittest.TestCase):
     def test_load_template(self):

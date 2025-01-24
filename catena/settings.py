@@ -44,7 +44,10 @@ LOG_CONFIG = Catenaconf.create({
 })
 
 VISUALIZE_CONFIG = Catenaconf.create({
-    "visualize_type": "tree"
+    "visualize_type": "tree",
+    "metrics": False,
+    "message_metrics": False,
+    "model_resp_metrics": False
 })
 
 STYLE_CONFIG = Catenaconf.create({

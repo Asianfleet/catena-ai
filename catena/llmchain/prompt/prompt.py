@@ -81,7 +81,7 @@ class ModelPrompt(Node):
     # 提示词输入
     prompt_input: Optional[str] = None
     # 节点 ID
-    node_id: Ntype = Field(default=Ntype.MODEL, init=False)
+    node_id: Ntype = Field(default=Ntype.PRM, init=False)
     # 消息列表
     message: MessageBus = Field(default=None, init=False)
     # 模板配置 
@@ -93,10 +93,6 @@ class ModelPrompt(Node):
         protected_namespaces=(),
         arbitrary_types_allowed=True
     )
-    
-    @property
-    def node_id(self) -> Ntype:
-        return self.node_id
     
     @classmethod
     def load_prompt(cls, label: str, resolve: bool = False) -> Union[KvConfig, None]:
@@ -208,7 +204,6 @@ class ModelPrompt(Node):
         
         return schema
 
-    
     def _simple_invoke(self, prompt_input: Union[str, Dict]) -> MessageBus:
         """ 
         无模板模式，此时输入应为两种情况：
@@ -340,18 +335,19 @@ class ModelPrompt(Node):
         return MessageBus([system_message])
 
     #@cli_visualize
-    def operate(self, input: Union[NodeBus, Dict, str]) -> NodeCompletion:
+    def operate(
+        self, input: Union[NodeCompletion, Dict, str]
+    ) -> NodeCompletion:
         """  """
         
-        if not isinstance(input, NodeBus):
-            bus = NodeBus()
-            bus.add(main_data=input)
+        if not isinstance(input, NodeCompletion):
+            completion = NodeCompletion()
+            completion.update(main_data=input)
         else:
-            bus = input
+            completion = input
         
-        input_data : NodeCompletion = bus.latest
-        prompt_input = input_data.main_data
-        config = input_data.extra_data
+        prompt_input = completion.main_data
+        config = completion.extra_data
         
         # 根据模板类型调用不同的处理函数
         if self.template_type == PType.UD:
@@ -370,13 +366,13 @@ class ModelPrompt(Node):
         config._merge(output_meta)
         debug("[ModelPrompt] output_messages:", output_messages)
         
-        bus.add(
+        prompt_completion = NodeCompletion(
             type=Ntype.PRM,
             main_data=output_messages,
             extra_data=config
         )
         
-        return bus.latest
+        return prompt_completion
             
 class PromptBuiltIn(Node):   
     
@@ -402,4 +398,3 @@ if __name__ == '__main__':
     pm = ModelPrompt(prompt_input="你好")
     msg = pm.operate("你好").main_data
     print(msg)
-    print(msg.model_message)

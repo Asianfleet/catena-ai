@@ -18,8 +18,13 @@ from ...response import ModelResponse
 from ...message import Message, MessageBus
 from ....error.modelerr import ModelError
 from ....catenasmith.cli_tools import info, warning
-from ....catena_core.alias.builtin import ModelProvider as Provider
+from ....catena_core.alias.builtin import (
+    NodeType as Ntype, 
+    ModelProvider as Provider
+)
+from ....catena_core.callback import NodeCallback
 from ....catena_core.node.completion import NodeCompletion
+
 
 try:
     from openai import OpenAI, AsyncOpenAI
@@ -368,10 +373,11 @@ class OpenAIOrigin(Model):
         assistant_message = self.format_assistant_message(response_message, model_metrics, response_usage)
         # 5、将 assistant 消息添加到消息列表中
         messages.add(assistant_message)
+        model_response.assistant_message = assistant_message
         # 在控制台展示
         # -*- Log response and metrics
-        assistant_message.printf()
-        model_metrics.prinf()
+        assistant_message.printf(level="Code")
+        model_metrics.prinf(level="Code")
         
         # 6、使用 assistant 消息内容和音频更新模型响应
         if assistant_message.content is not None:
@@ -381,17 +387,17 @@ class OpenAIOrigin(Model):
             # add the audio to the model response
             model_response.audio = assistant_message.audio
 
-        # 7、处理工具调用
-        tool_role = "tool"
-        if (
-            self.execute_tool_calls(
-                messages=messages,
-                model_response=model_response,
-                tool_role=tool_role,
-            )
-            is not None
-        ):
-            return self.handle_post_tool_call_messages(messages=messages, model_response=model_response)
+        ## 7、处理工具调用
+        #tool_role = "tool"
+        #if (
+        #    self.execute_tool_calls(
+        #        messages=messages,
+        #        model_response=model_response,
+        #        tool_role=tool_role,
+        #    )
+        #    is not None
+        #):
+        #    return self.handle_post_tool_call_messages(messages=messages, model_response=model_response)
         
         info("---------- OpenAI Response End ----------")
         return model_response
@@ -402,9 +408,67 @@ class OpenAIOrigin(Model):
     async def acreate_completion_stream(self, messages: MessageBus) -> Any:
         pass
     
-    def operate(self, input: NodeCompletion) -> NodeCompletion:
+    def reset(self) -> None:
+        """重置OpenAI模型为初始状态"""
+        # 重置请求参数
+        self.store = None
+        self.metadata = None
+        self.frequency_penalty = None
+        self.logit_bias = None
+        self.logprobs = None
+        self.top_logprobs = None
+        self.max_tokens = None
+        self.max_completion_tokens = None
+        self.modalities = None
+        self.audio = None
+        self.presence_penalty = None
+        self.response_format = None
+        self.seed = None
+        self.stop = None
+        self.temperature = None
+        self.user = None
+        self.top_p = None
+        self.extra_headers = None
+        self.extra_query = None
+        self.request_params = None
+
+        # 重置客户端初始化参数
+        self.api_key = None
+        self.organization = None
+        self.base_url = None
+        self.timeout = None
+        self.max_retries = None
+        self.default_headers = None
+        self.default_query = None
+        self.client_params = None
+
+        # 重置客户端实例
+        self.client = None
+        self.async_client = None
+
+        # 重置内部参数
+        self.structured_outputs = False
+        self.supports_structured_outputs = True
         
-        pass
+        # 重置继承自基类的工具相关属性
+        self.tools = None
+        self.tool_choice = None
+        self.tool_call_limit = None
+
+    def operate(self, input: NodeCompletion) -> NodeCompletion:
+        model_message = input.main_data
+        model_response = self.response(model_message)
+        model_completion = NodeCompletion(
+            main_data=model_response,
+            callback=NodeCallback(
+                source=self.nid,
+                target=Ntype.MEM,
+                name="update_memory",
+                main_input=model_response.assistant_message
+            )
+        )
+        
+        return model_completion
     
     
 if __name__ == "__main__":
@@ -422,6 +486,8 @@ if __name__ == "__main__":
         content="星球是什么形状的？请按给定格式输出"
     )])
     print(messages.model_message)
-    response = oai_model.create_completion(messages)
-    event = response.choices[0].message.parsed
-    print(event)
+    #response = oai_model.create_completion(messages)
+    #event = response.choices[0].message.parsed
+    #print(event)
+    model_response = oai_model.response(messages)
+    model_response.printf()
