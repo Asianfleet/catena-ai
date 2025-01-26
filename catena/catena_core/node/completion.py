@@ -22,8 +22,8 @@ class NodeCompletion(BaseModel):
     type: Enum = NodeType.UDFN
     # 主要数据
     main_data: Optional[Any] = None
-    # 次要数据，用键值对存储
-    extra_data: Optional[RT] = RT()
+    # 额外数据池，用键值对存储，这里设置为必选以防止忘记数据传递
+    extra_data: RT
     # 回调函数配置
     callback: NodeCallback = NodeCallback()
     

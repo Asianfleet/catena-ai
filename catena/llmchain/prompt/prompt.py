@@ -19,13 +19,14 @@ from pydantic import (
 from ..message import Message, MessageBus, MessageRole
 #from ...retriever import Retriever, InputRetrieve
 from ...catena_core.paths import Template
+from ...catena_core.utils.utils import is_url_or_base64
 from ...catena_core.node.base import Node, NodeBus, NodeCompletion
 from ...catena_core.alias.builtin import (
     NodeType as Ntype,
     PromptTemplateType as PType
 )
 from ...settings import info, RTConfig as RT
-from ...catenasmith.cli_tools import (
+from ...cli.tools import (
     Style as sty,
     debug, info
 )
@@ -83,7 +84,7 @@ class ModelPrompt(Node):
     # 节点 ID
     node_id: Ntype = Field(default=Ntype.PRM, init=False)
     # 消息列表
-    message: MessageBus = Field(default=None, init=False)
+    message: MessageBus = Field(default=MessageBus([]), init=False)
     # 模板配置 
     template: KvConfig = Field(default=None, init=False)
     # 模板类型
@@ -95,26 +96,39 @@ class ModelPrompt(Node):
     )
     
     @classmethod
-    def load_prompt(cls, label: str, resolve: bool = False) -> Union[KvConfig, None]:
-        if len(label.split(".")) == 2:
-            file = label.split(".")[0]
-            label = label.split(".")[1]
-            config_path = os.path.join(Template.PROMPT_PATH, file + ".yaml")
-            prompt = Catenaconf.load(config_path)[label]
-            if resolve: 
-                Catenaconf.resolve(prompt)
-            return prompt
-        else:
+    def load_prompt(
+        cls, label: str, key: Optional[str] = None, resolve: bool = False
+    ) -> Union[KvConfig, None]:
+        """ 从配置中加载提示词模板 """
+        from pathlib import Path
+        if "{" in label:
             return None
-    
+        if Path(label).exists():
+            config_path = label
+        else:
+            labels = label.split(".")    
+            if len(labels) == 0:
+                raise ValueError("invalid label")
+            if len(labels) == 2:
+                file = label.split(".")[0]
+                key = label.split(".")[1]
+                config_path = os.path.join(
+                    Template.BUILTIN_PROMPT_PATH, file + ".yaml"
+                )
+
+        prompt = Catenaconf.load(config_path)[key]
+        if resolve: 
+            Catenaconf.resolve(prompt)
+        return prompt
+            
     @classmethod
     def from_template(cls, template: str, *args, **kwargs):
         """ 从模板配置中创建 PromptTemplate 实例 """
         # 1、创建实例，加载模板
         instance = cls()  
-        instance.template = cls.load_prompt(template)
+        instance.template = cls.load_prompt(template, *args, **kwargs)
         # 2、判断模板类型并做出相应处理
-        info("[ModelPrompt.from_template] instance.template:", instance.template)
+        debug("[ModelPrompt.from_template] instance.template:", instance.template)
         if instance.template:
             info("[ModelPrompt.from_template] 使用 yaml 模板")
             instance.template_type = PType.YAML
@@ -237,13 +251,15 @@ class ModelPrompt(Node):
             
             return message
 
-    """ def _yaml_templ_invoke(self, prompt_input: Union[str, Dict]) -> List:
+    def _yaml_templ_invoke(self, prompt_input: Union[str, Dict]) -> List:
         #
         #有模板模式（从 yaml 文件中读取模板），此时输入应为两种情况：
         #1. 字符串，直接作为用户输入，此时内建模板必须只包含一个参数。
         #2. 字典，包含内建模板的所有参数，其中键为参数名称，值为参数的值。
         #
-        mapping = {key: (str, value) for key, value in self.template.meta.param.items()}
+        mapping = {
+            key: (str, value) for key, value in self.template.meta.param.items()
+        }
         TempateInputPrompt = create_model(
             "TempateInputPrompt",
             **mapping,
@@ -252,28 +268,37 @@ class ModelPrompt(Node):
 
         if isinstance(prompt_input, dict):
             try:
-                prompt_input = TempateInputPrompt(**prompt_input)
-                prompt_input = prompt_input.model_dump()
-            except ValidationError as e:
-                print(e.json())
+                prompt_input: BaseModel = TempateInputPrompt(**prompt_input)
+                args_dict: Dict = prompt_input.model_dump()
+            except ValidationError:
+                raise
 
-            for arg, value in prompt_input.items():
-                self._template.meta.param[arg] = value
+            for arg, value in args_dict.items():
+                if is_url_or_base64(value):
+                    raise ValueError("模板参数值不能为 URL 或 Base64")
+                self.template.meta.param[arg] = value
         else:
-            assert len(self._template.meta.param) == 1, ""
-            key = list(unwarp(self._template.meta.param).keys())
-            self._template.meta.param[key[0]] = prompt_input
+            if len(self.template.meta.param) != 1:
+                raise ValueError("模板参数数量错误") 
+            if is_url_or_base64(value):
+                raise ValueError("模板参数值不能为 URL 或 Base64")
+            key = list(self.template.meta.param.keys())
+            self.template.meta.param[key[0]] = args_dict
 
-        if self._template.meta.retriver_call:
-            pass
-        if self._template.meta.model_args == None:
-            self._template.meta.model_args = {}
-
-        interpolate(self._template)
-        self.message = unwarp(self._template.message)
-
-
-        return self.message """
+        #if self.template.meta.retriver_call:
+        #    pass
+        if self.template.meta.model_args == None:
+            self.template.meta.model_args = {}
+        Catenaconf.resolve(self.template)
+        
+        for msg in self.template:
+            self.message.add(
+                role=msg.role,
+                content=msg.content,
+                image=msg.image
+            )
+        
+        return self.message.deepcopy()
 
     def _str_templ_invoke(self, prompt_input) -> MessageBus:
         """ 
@@ -305,7 +330,7 @@ class ModelPrompt(Node):
                     system_message.images = value
                 elif isinstance(value, str):
                     # 判断是否是base64或url
-                    if value.startswith(('http://', 'https://')):
+                    if is_url_or_base64(value):
                         self.template.meta.param[arg] = "已给出"
                         system_message.images = value
                     else:
@@ -319,7 +344,7 @@ class ModelPrompt(Node):
                 self.template.meta.param[key[0]] = prompt_input
             elif isinstance(prompt_input, str):
                     # 判断是否是base64或url
-                    if prompt_input.startswith(('http://', 'https://')):
+                    if is_url_or_base64(prompt_input):
                         self.template.meta.param[arg] = "已给出"
                         system_message.images = prompt_input
                     else:
@@ -356,8 +381,8 @@ class ModelPrompt(Node):
         else:
             if self.template_type == PType.STR:
                 output_messages = self._str_templ_invoke(prompt_input)
-            #elif self.template_type == PType.YAML:
-            #    output_messages = self._yaml_templ_invoke(prompt_input)
+            elif self.template_type == PType.YAML:
+                output_messages = self._yaml_templ_invoke(prompt_input)
             output_meta = {
                 "output": self.template.meta.output, 
                 "model_args": self.template.meta.model_args
@@ -382,19 +407,25 @@ class PromptBuiltIn(Node):
 if __name__ == '__main__':
     # python -m catena.llmchain.prompt.prompt
     # settings.configure(disable_visualize=True)
-    str_tem = """
-    下面你要完成一个任务，按照给定的要求，并且参照给定的图片。
-    要求：{request}
-    图片：{image}
-    """
+    # str_tem = """
+    # 下面你要完成一个任务，按照给定的要求，并且参照给定的图片。
+    # 要求：{request}
+    # 图片：{image}
+    # """
 
-    prompt = ModelPrompt.from_template(str_tem)
+    # prompt = ModelPrompt.from_template(str_tem)
     
-    prompt_input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
-    completion = prompt.operate(prompt_input)
+    # prompt_input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
+    # completion = prompt.operate(prompt_input)
 
-    #print(completion.main_data.latest.to_model_message())
+    # #print(completion.main_data.latest.to_model_message())
     
-    pm = ModelPrompt(prompt_input="你好")
-    msg = pm.operate("你好").main_data
-    print(msg)
+    # pm = ModelPrompt(prompt_input="你好")
+    # msg = pm.operate("你好").main_data
+    # print(msg)
+
+    pm = ModelPrompt.from_template(
+        "/home/legion4080/Programing/catena/ww.yaml",
+        key="s"
+    )
+    print(pm.template)

@@ -19,7 +19,7 @@ from typing import (
 from ...error import toolserr
 from .function import Function
 from .tool_registry import ToolRegistry as Registry
-from ...catenasmith.cli_tools import debug
+from ...cli.tools import debug
 
 # 定义泛型类型变量，用于规定工具返回类型
 T = TypeVar("T")

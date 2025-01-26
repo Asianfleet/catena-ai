@@ -2,7 +2,7 @@ from __future__ import annotations
 import copy
 from time import time
 from collections import deque
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import (
     Any,
     Callable,
@@ -52,6 +52,17 @@ class MessageRole:
     ) -> Message:
         content = "上下文信息：\n" + cls.preprocess(content, proc)
         return Message(role="system", content=content)
+
+    @classmethod
+    def msg(
+        cls, 
+        role: Literal["system", "user", "assistant"],
+        content: str, 
+        proc: Callable[[str], str] = None,
+        **kwargs
+    ) -> Message:
+        content = cls.preprocess(content, proc)
+        return Message(role=role, content=content, **kwargs)
 
     @classmethod
     def system(
@@ -107,11 +118,26 @@ class Message(BaseModel):
     # 上下文信息，主要与 RAG 结合 
     context: Optional[MessageContext] = None
     
+    # 运行时模型参数，优先级最高
+    runtime_args: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    
     # 模型单次调用性能信息
     metrics: Optional[Dict] = Field(default_factory=dict)
     
     # 创建时间
     created_at: int = Field(default_factory=lambda: int(time()))
+
+    @field_validator("role")
+    def role_validator(cls, role: str, values: Dict[str, Any]) -> str:
+        """验证assistant role的多媒体数据"""
+        if role == "assistant":
+            if values.get("images") is not None:
+                raise ValueError("Assistant message cannot contain images.")
+            if values.get("videos") is not None:
+                raise ValueError("Assistant message cannot contain videos.")
+            if values.get("audio") is not None:
+                raise ValueError("Assistant message cannot contain audio.")
+        return role
 
     @property
     def model_message(self) -> Dict[str, Any]:
@@ -163,7 +189,7 @@ class Message(BaseModel):
 
     def printf(self, **kwargs):
         """ 打印 Message 对象的信息 """
-        from ..catenasmith.cli_tools import info, info_condition
+        from ..cli.tools import info, info_condition
         with info_condition(settings.visualize.message_metrics, **kwargs):
             info("**************** MESSAGE OBJECT ****************")
             info(f"* Role:                   {self.role}")

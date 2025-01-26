@@ -6,5 +6,5 @@ src_folder = os.path.dirname(current_script_path)
 LIB_BASEPATH = os.path.dirname(src_folder)
 
 class Template:
-    PROMPT_PATH = os.path.join(LIB_BASEPATH, ".data", ".templates")
+    BUILTIN_PROMPT_PATH = os.path.join(LIB_BASEPATH, ".data", ".templates")
     

@@ -18,7 +18,7 @@ from ..metrics import Metrics
 from ...response import ModelResponse
 from ...message import Message, MessageBus
 from ....error.modelerr import ModelError
-from ....catenasmith.cli_tools import info, warning
+from ....cli.tools import info, warning
 from ....catena_core.alias.builtin import (
     NodeType as Ntype, 
     ModelProvider as Provider

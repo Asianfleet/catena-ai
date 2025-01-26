@@ -33,4 +33,9 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.7",
+    entry_points={
+        "console_scripts": [
+            "catena=catena.cli.cli_app:main",  # 注册命令行工具
+        ],
+    },
 )

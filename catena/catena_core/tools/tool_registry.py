@@ -1,6 +1,6 @@
 from typing import Any, Dict, Union
 
-from ...catenasmith.cli_tools import debug
+from ...cli.tools import debug
 
 class ToolRegistry:
     """ 工具注册类 """

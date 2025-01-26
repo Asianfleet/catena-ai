@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from ..settings import settings
 from ..llmchain.message import Message
-from ..catenasmith.cli_tools import info, info_condition
+from ..cli.tools import info, info_condition
 
 
 class ModelResponseEvent(str, Enum):

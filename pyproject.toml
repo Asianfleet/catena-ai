@@ -24,3 +24,5 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 urls = { "Source" = "https://github.com/Asianfleet/catena" }
+[project.scripts]
+catena = "catena.cli.cli_app:main"

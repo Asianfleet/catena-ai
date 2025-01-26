@@ -16,7 +16,7 @@ from .metrics import Metrics
 from ..response import ModelResponse
 from ..message import MessageBus
 
-from ...catenasmith.cli_tools import debug, error
+from ...cli.tools import debug, error
 from ...error.chainerr import *
 from ...catena_core.node.base import Node, NodeBus
 from ...settings import settings, RTConfig

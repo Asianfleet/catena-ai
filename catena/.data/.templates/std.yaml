@@ -1,0 +1,21 @@
+TEMPLATE_NAME:
+  message:
+    - role: "system"
+      content: Null
+      image: Null
+      audio: Null
+      video: Null
+  message:
+    - role: Null
+      content: Null
+      image: Null
+      audio: Null
+      video: Null 
+  
+  meta:
+    retriver_call: Null
+    model_args: Null
+    param: Null
+    output:
+      type: Null
+      schema: Null

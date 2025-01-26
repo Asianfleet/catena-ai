@@ -13,7 +13,7 @@ from typing import (
     Union, 
 )
 
-from ...catenasmith.cli_tools import debug, error
+from ...cli.tools import debug, error
 
 def to_base64(image: Union[str, np.ndarray, Image.Image]) -> str:
     # 如果输入是base64字符串，直接返回

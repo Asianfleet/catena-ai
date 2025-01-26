@@ -10,7 +10,7 @@ from typing import (
 )
 
 from ...catena_core.tools.tool import Tool
-from ...catenasmith.cli_tools import error, debug
+from ...cli.tools import error, debug
 
 @overload
 def tool() -> Tool:
