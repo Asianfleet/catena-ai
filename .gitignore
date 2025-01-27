@@ -7,6 +7,6 @@ test__*
 .coverage
 data.json
 versions.json
-
+build/
 
 
