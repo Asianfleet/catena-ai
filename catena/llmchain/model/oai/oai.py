@@ -316,7 +316,6 @@ class OpenAIOrigin(Model):
         if response_message.tool_calls is not None and len(response_message.tool_calls) > 0:
             try:
                 assistant_message.tool_calls = [t.model_dump() for t in response_message.tool_calls]
-                print([t.model_dump() for t in response_message.tool_calls])
             except Exception as e:
                 warning(f"Error processing tool calls: {e}")
         if hasattr(response_message, "audio") and response_message.audio is not None:

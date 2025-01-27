@@ -21,7 +21,19 @@ from ...catena_core.utils.timer import record_time
 from ...llmchain.message import MessageRole as MsgRole
 from ...llmchain.model.minimal.llm import minimal_llm_response
 
-FUNCTION_CACHE = "catena/.data/.cache/functions_impl.pkl"
+
+# 将路径拆分为各个部分
+parts = os.path.dirname(os.path.abspath(__file__)).split(os.sep)
+
+# 找到第二个 'catena' 的索引
+try:
+    index = [i for i, part in enumerate(parts) if part == 'catena'][1]
+except IndexError:
+    raise ValueError("路径中没有第二个 'catena'")
+
+# 获取第二个 'catena' 之前的路径
+top_path = os.path.join(*parts[:index])
+FUNCTION_CACHE = os.path.join("/", top_path, "catena/.data/.cache/functions_impl.pkl")
 
 
 @dataclass
@@ -155,11 +167,12 @@ class Function:
         return_pattern = re.compile(
             r'\s*([a-zA-Z]+)([（(])([^（）()]+)([）)])\s*[:：]\s*(.*?)'
         )
-        parsed = {}
+        parsed = {"overall": None, "param_desc": {}, "return_type": None}
         for pattern in patterns:
             match = re.match(pattern, description, re.DOTALL)
             if match:
-                parsed["overall"] = match.group(1).strip()
+                overall = match.group(1).replace("[description]", "")
+                parsed["overall"] = overall.strip()
                 for group in match.groups()[1:]:
                     mathes_p = param_pattern.findall(group)
                     mathes_r = return_pattern.findall(group)
@@ -172,7 +185,7 @@ class Function:
                         parsed["return_type"] = mathes_r[0][2]
                         continue
                 break
-        if not parsed:
+        if not parsed["overall"]:
             parsed["overall"] = description
         return parsed
 
@@ -192,8 +205,6 @@ class Function:
                 if self.signature.return_annotation == Parameter.empty:
                     raise toolserr.ToolMetaDataInitializeError("不允许空返回类型")
             self.metadata.update({"parameters": {}})
-            if self.parsed_meta.get("param_desc"):
-                self.metadata.update({"param_desc": self.parsed_meta["param_desc"]})
             for name, pm in self.signature.parameters.items():
                 # 检查变长参数
                 if not self.allow_variadic and name in ('args', 'kwargs'):
@@ -212,8 +223,14 @@ class Function:
                     }
                 }
                 self.metadata["parameters"].update(param)
-            if self.metadata["parameters"].keys() != self.parsed_meta["param_desc"].keys():
-                raise toolserr.ToolMetaDataInitializeError("参数描述与函数签名不匹配")
+            if self.parsed_meta.get("param_desc"):
+                self.metadata.update({"param_desc": self.parsed_meta["param_desc"]})
+                if (
+                    self.metadata["parameters"].keys() 
+                    != 
+                    self.parsed_meta["param_desc"].keys()
+                ):
+                    raise toolserr.ToolMetaDataInitializeError("参数描述与函数签名不匹配")
             self.metadata.update({"return": self.signature.return_annotation})
         else:
             self.strict_check = False
@@ -244,7 +261,8 @@ class Function:
         # TODO: 设置提示词语言
         llm_prompt = [
             MsgRole.system(
-""" 你是一个非常智能的编程助手，十分擅长根据要求来编写代码。尤其是擅长 Python 语言。
+""" 
+你是一个非常智能的编程助手，十分擅长根据要求来编写代码。尤其是擅长 Python 语言。
 请根据给定的 json 数据的提示，实现一个函数，并返回函数的代码。
 
 给定的 json 数据的格式是：
@@ -269,17 +287,26 @@ class Function:
     3. 函数的参数个数严格按照 params 字段（可以有多个值）
     4. 函数的参数类型、是否必选以及返回值类型严格按照 params 和 return 字段的规定
     5. 实现的函数要严格包含函数的参数、默认值（如果有）、返回值类型以及文档字符串、行间注释
+    6. 函数必须有文档字符串且格式严格按照下面的示例：
+        1.分成三部分：[description]、[params]、[return]
+        2.[description]：用一段纯文字详细描述函数的功能
+        3.[params]：描述函数的参数，是无序列表，每一项为：- 参数名(参数类型):对参数的描述
+        4.[return]：描述函数的返回值，格式为：返回值(类型):对返回值描述，只有一行
     
         例如：
-        def func(a: int, b: int = 1) -> int:
+        def func(a: int, b: int) -> int:
             '''
-            函数的功能是：
-            1. 输入两个整数 a 和 b
-            2. 返回 a 和 b 的和
+            [description]
+                用于两个整数求和
+            [parameters]
+                - a(int):整数a
+                - b(int):整数b
+            [return]
+                weather(str):天气信息
             '''
             return a + b
   
-    6.  代码部分包裹在 
+    7.  代码部分包裹在 
         ```python
             ...
         ```
@@ -320,7 +347,8 @@ f"""
         # 执行代码获取函数对象
         namespace = {}
         exec(code_content, namespace)
-        return namespace[self.metadata['name']]
+        func = namespace[self.metadata['name']]
+        return func
         
     def __call__(self, *args, **kwargs):
         """ 调用函数 """
@@ -340,6 +368,7 @@ f"""
                     # 如果字典中没有这个函数且允许自动实现
                     elif self.auto_impl:
                         self.func = self.auto_implement()
+                        self.generate_metadata()
                         info("函数实现时间：", self.impl_time_elapsed)
                     else:
                         raise toolserr.ToolMetaDataInitializeError("函数未实现")
@@ -347,6 +376,7 @@ f"""
                 # 如果pkl文件不存在或为空且允许自动实现
                 if self.auto_impl:
                     self.func = self.auto_implement()
+                    self.generate_metadata()
                     info("函数实现时间：", self.impl_time_elapsed)
                 else:
                     raise toolserr.ToolMetaDataInitializeError("函数未实现")
@@ -362,17 +392,19 @@ f"""
     
 if __name__ == "__main__":
     # python -m catena.catena_core.tools.function
-    def format(input: str, repeat: int = 2) -> str:
-        """ 将输入字符串的第一个字母按照repeat次重复后输出 """
+    # def format(input: str, repeat: int = 2) -> str:
+    #     """ 将输入字符串的第一个字母按照repeat次重复后输出 """
     
-    f = Function(
-        name="a",
-        description="ghaiwksrgagr",
-        func=format,
-        strict_check=True,
-        auto_impl=True
-    )
+    # f = Function(
+    #     name="a",
+    #     description="ghaiwksrgagr",
+    #     func=format,
+    #     strict_check=True,
+    #     auto_impl=True
+    # )
     
-    print(f.metadata)
-    result = f("hello")
-    print(result)
+    # print(f.metadata)
+    # result = f("hello")
+    # print(result)
+
+    print(FUNCTION_CACHE)

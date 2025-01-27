@@ -9,16 +9,9 @@ from typing import (
     overload
 )
 
-from ...catena_core.tools.tool import Tool
 from ...cli.tools import error, debug
+from ...catena_core.tools import Function, Tool
 
-@overload
-def tool() -> Tool:
-    ...
-
-@overload
-def tool(func: Callable[..., Any]) -> Tool:
-    ...
 
 @overload
 def tool(
@@ -32,6 +25,14 @@ def tool(
     show_result: Optional[bool] = None,
     stop_after_call: Optional[bool] = None
 ) -> Tool:
+    ...
+
+@overload
+def tool() -> Tool:
+    ...
+
+@overload
+def tool(func: Callable[..., Any]) -> Tool:
     ...
 
 def tool(*args, **kwargs):
@@ -66,14 +67,13 @@ def tool(*args, **kwargs):
             tool = Tool(**tool_metadata)    
             func.__is_registered__ = True
         
-        @wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                return func(*args, **kwargs)
+                return tool(*args, **kwargs)
             except Exception as e:
                 error(
-                    f"Error in tool {func.__name__!r}: {e!r}",
-                    exc_info=True,  # Include stack trace
+                    f"Error in tool {tool.func_name}: {e!r}",
+                    #exc_info=True,  # Include stack trace
                 )
                 raise
         

@@ -383,7 +383,7 @@ class ModelPrompt(Node):
             completion = input
         
         prompt_input = completion.main_data
-        config = completion.extra_data
+        runtime = completion.extra_data
         
         # 根据模板类型调用不同的处理函数
         if self.template_type == PType.UD:
@@ -399,13 +399,13 @@ class ModelPrompt(Node):
                 "model_args": self.template.meta.model_args
             }
         self.message = output_messages
-        config._merge(output_meta)
+        runtime._merge(output_meta)
         debug("[ModelPrompt] output_messages:", output_messages)
         
         prompt_completion = NodeCompletion(
             type=Ntype.PRM,
             main_data=output_messages,
-            extra_data=config
+            extra_data=runtime
         )
         
         return prompt_completion

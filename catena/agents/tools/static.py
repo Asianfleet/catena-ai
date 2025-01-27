@@ -37,7 +37,7 @@ class ToolCompletion(BaseModel):
 
 
 @dataclass
-class StaticTool(Generic[T], Tool, ABC):
+class StaticTool(Tool, ABC):
     """ 工具配置类，用于定义工具的元数据 """
     
     name: str = field(
@@ -84,21 +84,6 @@ class StaticTool(Generic[T], Tool, ABC):
     def __post_init__(self):
         self.func = self._execute
     
-    @property
-    def return_type(self) -> type:
-        """推断并返回输入类型"""
-        for base in self.__class__.__orig_bases__:
-            # 检查是否是泛型类型
-            if hasattr(base, "__args__"):
-                args = base.__args__
-                if args:
-                    return args[0]
-        
-        raise TypeError(
-            f"Tool {self.class_name} doesn't have an inferable return_type. "
-            "Override the return_type property to specify the input type."
-        )
-
     @property
     def func_name(self) -> str:
         """ 获取函数名称 """

@@ -173,9 +173,29 @@ class Node(BaseModel):
     def _callback(self, input: NodeCallback) -> Any:
         pass
 
+    def _operate(self, input: Any, runtime: RT = None) -> Any:
+        return NotImplementedError
+
     def operate(self, input: NodeCompletion) -> NodeCompletion:
         """ 提供给外部的接口 """
-        return NotImplementedError
+        if not isinstance(input, NodeCompletion):
+            completion = NodeCompletion()
+            completion.update(main_data=input)
+        else:
+            completion = input
+        
+        main_input = completion.main_data
+        runtime = completion.extra_data
+        
+        output = self._operate(main_input, runtime)
+        
+        node_completion = NodeCompletion(
+            type=self.node_id,
+            main_data=output,
+            extra_data=runtime
+        )
+        
+        return node_completion
 
     def to_dict(self) -> Dict[str, Any]:
         """ 将 Node 对象转换为字典 """

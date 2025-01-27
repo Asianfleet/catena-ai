@@ -6,7 +6,7 @@
 - 每秒生成的token数量
 """
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import List, Optional
 
 from ...settings import settings
 from ...catena_core.utils.timer import Timer
@@ -22,6 +22,7 @@ class Metrics:
     prompt_tokens_details: Optional[dict] = None
     completion_tokens_details: Optional[dict] = None
     time_to_first_token: Optional[float] = None
+    response_times: List = field(default_factory=list)
     response_timer: Timer = field(default_factory=Timer)
 
     def prinf(self, **kwargs):
@@ -31,7 +32,8 @@ class Metrics:
             if self.time_to_first_token is not None:
                 info(f"* Time to first token:         {self.time_to_first_token:.4f}s")
             info(f"* Time to generate response:   {self.response_timer.elapsed:.4f}s")
-            info(f"* Tokens per second:           {self.output_tokens / self.response_timer.elapsed:.4f} tokens/s")
+            if self.response_timer.elapsed:
+                info(f"* Tokens per second:           {self.output_tokens / self.response_timer.elapsed:.4f} tokens/s")
             info(f"* Input tokens:                {self.input_tokens or self.prompt_tokens}")
             info(f"* Output tokens:               {self.output_tokens or self.completion_tokens}")
             info(f"* Total tokens:                {self.total_tokens}")

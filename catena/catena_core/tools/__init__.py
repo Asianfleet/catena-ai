@@ -7,5 +7,5 @@ __all__ = [
     "Tool",
     "ToolSet",
     "ToolRegistry",
-    "function"
+    "Function"
 ]

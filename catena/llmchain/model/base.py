@@ -91,6 +91,10 @@ class Model(Node):
     def completion_args(self) -> Dict[str, Any]:
         raise NotImplementedError
     
+    @property
+    def parsed_metrics(self) -> Metrics:
+        return Metrics(**self.metrics)
+
     #@model_validator(mode="after")
     #def validate_model_args(cls, values):
     #    return
