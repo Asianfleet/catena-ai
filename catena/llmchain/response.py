@@ -28,8 +28,9 @@ class ModelResponse:
     event: str = ModelResponseEvent.assistant_response.value
     created_at: int = int(time())
     
-    def printf(self):
-        with info_condition(settings.visualize.model_resp_metrics):
+    def printf(self, **kwargs):
+        kwargs.update({"pre": False})
+        with info_condition(settings.visualize.model_resp_metrics, **kwargs):
             info("**************** MODEL RESPONSE ****************")
             info(f"* Content: {self.content}")
             info(f"* Parsed: {self.parsed}")

@@ -102,13 +102,19 @@ class Message(BaseModel):
     # 角色
     role: Literal["system", "user", "assistant", "tool"]
     # 内容
-    content: Union[str, List[Dict[str, Any]]]
+    content: Optional[Union[str, List[Dict[str, Any]]]] = None
     # 工具调用
     tool_calls: Optional[List[Dict[str, Any]]] = None
     # 内置的工具调用
     tool_call_builtin: Optional[List[Any]] = None
     # 工具调用 ID
     tool_call_id: Optional[str] = None
+    # 是否在工具调用后停止对话
+    stop_after_tool_call: Optional[bool] = False
+    
+    # An optional name for the participant. Provides the model information 
+    # to differentiate between participants of the same role.
+    name: Optional[str] = None
     
     # 其他模态信息
     audio: Optional[Any] = None
@@ -128,14 +134,15 @@ class Message(BaseModel):
     created_at: int = Field(default_factory=lambda: int(time()))
 
     @field_validator("role")
-    def role_validator(cls, role: str, values: Dict[str, Any]) -> str:
+    def role_validator(cls, role: str, info) -> str:
         """验证assistant role的多媒体数据"""
         if role == "assistant":
-            if values.get("images") is not None:
+            data = info.data
+            if data.get("images") is not None:
                 raise ValueError("Assistant message cannot contain images.")
-            if values.get("videos") is not None:
+            if data.get("videos") is not None:
                 raise ValueError("Assistant message cannot contain videos.")
-            if values.get("audio") is not None:
+            if data.get("audio") is not None:
                 raise ValueError("Assistant message cannot contain audio.")
         return role
 
@@ -145,37 +152,40 @@ class Message(BaseModel):
 
     def to_model_message(self) -> Dict[str, Any]:
         """ 将 Message 对象转换为模型消息列表 """
-        message = {"role": self.role}
+        _message = self.model_dump(
+            exclude_none=True,
+            include={"role", "content", "audio", "name", "tool_call_id", "tool_calls"},
+        )
+        if self.content is None:
+            _message["content"] = None
+        
         if self.images:
-            if self.role == "assistant":
-                raise ValueError("Assistant message cannot contain images.")
             # 处理带图片的消息
             from ..catena_core.utils.image import to_base64, concat_images
             if settings.prompt.image_concat_direction:
                 direction = settings.prompt.image_concat_direction
                 img_concated = concat_images(self.images, direction)
                 image_base64 = to_base64(img_concated)
-                message["content"] = [
+                _message["content"] = [
                     {
                         "type": "image_url",
                         "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
                     },
                     {"type": "text", "text": self.content}
                 ]
-                return message
+                return _message
             if isinstance(self.images, list):
-                message["content"] = []
+                _message["content"] = []
                 for img in self.images:
                     image_base64 = to_base64(img)
-                    message["content"].append({
+                    _message["content"].append({
                         "type": "image_url",
                         "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
                     })
-                message["content"].append({"type": "text", "text": self.content})
-                return message
-        # 没有图片时返回基本消息结构
-        message["content"] = self.content
-        return message
+                _message["content"].append({"type": "text", "text": self.content})
+                return _message
+
+        return _message
 
     def get_content_string(self) -> str:
         """Returns the content as a string."""
@@ -190,6 +200,7 @@ class Message(BaseModel):
     def printf(self, **kwargs):
         """ 打印 Message 对象的信息 """
         from ..cli.tools import info, info_condition
+        kwargs.update({"pre": False})
         with info_condition(settings.visualize.message_metrics, **kwargs):
             info("**************** MESSAGE OBJECT ****************")
             info(f"* Role:                   {self.role}")
@@ -282,8 +293,8 @@ if __name__ == "__main__":
         images=[
             "https://www.baidu.com/img/bd_logo1.png",
             "https://www.baidu.com/img/bd_logo1.png"
-        ]
+        ],
+        tool_calls=[{'id': 'call_EcKtTB07sQGadJgxMWVIdhnG', 'function': {'arguments': '{"region":"齐河"}', 'name': 'sample_func'}, 'type': 'function'}]
     )
-
-    message.printf()
     print(message.to_model_message())
+    

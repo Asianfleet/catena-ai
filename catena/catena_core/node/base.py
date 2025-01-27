@@ -12,6 +12,7 @@ from typing import (
     Union
 )
 
+from .meta import NodeMeta
 from .completion import NodeBus, NodeCompletion
 from ..alias.builtin import NodeType
 from ..callback.node_callback import (
@@ -156,7 +157,6 @@ class Node(BaseModel):
             Node
         ]
     ) -> NodeChain:
-        print("rshift")
         return NodeChain(first=self, second=encapsulate(other))
        
     def __rrshift__(self, other: Any) -> NodeChain:
@@ -189,7 +189,6 @@ class Node(BaseModel):
 
         return _dict
         
-
 class NodeChain(BaseModel):
     """
     是 Node 的具体实现，主要用于将多个 Node 任务串联起来，形成一个按顺序执行的任务链：
@@ -325,7 +324,7 @@ class NodeChain(BaseModel):
                     try:
                         index = self.chain_id.index(cb_args["target"])
                     except ValueError:
-                        warning("[handle_callback] target node not found, use previous node")
+                        debug("[handle_callback] target node not found, use previous node")
                         index = node_idx - 1
                         cb_args["name"] = "default"
                 # 否则，获取上一个节点的索引，执行上一个节点的回调函数    
@@ -370,7 +369,7 @@ class NodeChain(BaseModel):
         self.compile()  
         debug("[NodeChain.operate] chain:\n", "\n".join([str(node) for node in self.chain]))
         # 将输出作为第一个 
-        self.Bus.add(main_data=input)
+        self.Bus.add(main_data=input, extra_data = RT())
 
         # 遍历链路中的节点
         for index, node in enumerate(self.chain):
@@ -493,7 +492,7 @@ def encapsulate(obj: Any) -> Node:
             node_id: NodeType = NodeType.WRAPPED
             def operate(self, input: NodeCompletion) -> NodeCompletion:
                 obj_input = input.main_data
-                output = NodeCompletion(main_data=obj(obj_input))
+                output = NodeCompletion(main_data=obj(obj_input), extra_data=RT())
                 return output
         result = SimpleNode()
     elif isinstance(obj, (dict, str)): 
@@ -502,7 +501,7 @@ def encapsulate(obj: Any) -> Node:
         class SimpleNode(Node):
             node_id: NodeType = NodeType.WRAPPED
             def operate(self, input: Any) -> NodeCompletion:
-                output = NodeCompletion(main_data=obj)
+                output = NodeCompletion(main_data=obj, extra_data=RT())
                 return output
                 
         result = SimpleNode()
@@ -514,9 +513,9 @@ def encapsulate(obj: Any) -> Node:
             def operate(self, input: NodeCompletion) -> NodeCompletion:
                 if hasattr(obj, "operate"):  # 如果对象有 operate 方法，则调用该方法
                     result = obj.operate(input)
-                    output = NodeCompletion(main_data=result)
+                    output = NodeCompletion(main_data=result, extra_data=RT())
                 else:
-                    output = NodeCompletion(main_data=obj)
+                    output = NodeCompletion(main_data=obj, extra_data=RT())
                 return output
         result = SimpleNode()
     return result

@@ -1,4 +1,5 @@
 import os
+import re
 import pickle
 import inspect
 from inspect import Parameter
@@ -139,10 +140,50 @@ class Function:
         """ 初始化函数元数据 """
         self.generate_metadata()
         
+    def parse_function_description(self, description) -> Dict[str, Any]:
+        """ 解析函数描述 """
+        patterns = [
+            r"(.*)\[parameters\](.*)\[return\](.*)",
+            r"(.*)\[parameters\](.*)",
+            r"(.*)\[return\](.*)"
+        ]
+        
+        param_pattern = re.compile(
+            r'\s*-\s*([a-zA-Z]+)([（(])([^（）()]+)([）)])\s*[:：]\s*(.*?)\n'
+        )
+        
+        return_pattern = re.compile(
+            r'\s*([a-zA-Z]+)([（(])([^（）()]+)([）)])\s*[:：]\s*(.*?)'
+        )
+        parsed = {}
+        for pattern in patterns:
+            match = re.match(pattern, description, re.DOTALL)
+            if match:
+                parsed["overall"] = match.group(1).strip()
+                for group in match.groups()[1:]:
+                    mathes_p = param_pattern.findall(group)
+                    mathes_r = return_pattern.findall(group)
+                    if mathes_p:
+                        parsed["param_desc"] = {
+                            m[0]: m[4] for m in mathes_p
+                        }
+                        continue
+                    if mathes_r:
+                        parsed["return_type"] = mathes_r[0][2]
+                        continue
+                break
+        if not parsed:
+            parsed["overall"] = description
+        return parsed
+
     def generate_metadata(self):
         """ 生成函数元数据 """
-        self.metadata.update({"name": self.func_name, "description": self.func_doc})
+        self.parsed_meta: Dict = self.parse_function_description(self.func_doc)
         if self.func:
+            self.metadata.update({
+                "name": self.func_name, 
+                "description": self.parsed_meta["overall"]
+            })
             self.signature = inspect.signature(self.func)
             self.parameters = self.signature.parameters
             if self.strict_check:
@@ -151,6 +192,8 @@ class Function:
                 if self.signature.return_annotation == Parameter.empty:
                     raise toolserr.ToolMetaDataInitializeError("不允许空返回类型")
             self.metadata.update({"parameters": {}})
+            if self.parsed_meta.get("param_desc"):
+                self.metadata.update({"param_desc": self.parsed_meta["param_desc"]})
             for name, pm in self.signature.parameters.items():
                 # 检查变长参数
                 if not self.allow_variadic and name in ('args', 'kwargs'):
@@ -169,11 +212,15 @@ class Function:
                     }
                 }
                 self.metadata["parameters"].update(param)
+            if self.metadata["parameters"].keys() != self.parsed_meta["param_desc"].keys():
+                raise toolserr.ToolMetaDataInitializeError("参数描述与函数签名不匹配")
             self.metadata.update({"return": self.signature.return_annotation})
         else:
             self.strict_check = False
             self.allow_variadic_args = False
-            self.metadata.update({"name": self.name, "description": self.func_doc})
+            self.metadata.update(
+                {"name": self.name, "description": self.parsed_meta["overall"]}
+            )
         
     def validate_actual_work(self, func):
         """ 工具是否包含实际工作 """
@@ -211,6 +258,9 @@ class Function:
                 'required': param1 是否为必选参数（False 或 True）
             }
         }, 
+        "param_desc': {
+            'param1': param1 的详细描述
+        },
         'return': 函数的返回值类型（例如：<class 'int'>）
     }
 要求是：

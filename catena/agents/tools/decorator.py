@@ -63,7 +63,7 @@ def tool(*args, **kwargs):
                 "func": func,
                 **{k: v for k, v in kwargs.items() if k != "func"}
             }
-            Tool(**tool_metadata)    
+            tool = Tool(**tool_metadata)    
             func.__is_registered__ = True
         
         @wraps(func)
@@ -77,6 +77,8 @@ def tool(*args, **kwargs):
                 )
                 raise
         
+        wrapper.func_name = tool.func_name
+        wrapper.metadata = tool.metadata
         return wrapper
     
     if len(args) == 1 and callable(args[0]):

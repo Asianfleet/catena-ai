@@ -25,6 +25,7 @@ class Metrics:
     response_timer: Timer = field(default_factory=Timer)
 
     def prinf(self, **kwargs):
+        kwargs.update({"pre": False})
         with info_condition(settings.visualize.metrics, **kwargs):
             info("**************** METRICS OBJECT ****************")
             if self.time_to_first_token is not None:

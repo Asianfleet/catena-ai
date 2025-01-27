@@ -31,7 +31,7 @@ class PromptTemplateType(Enum):
     """ 内置模板类型 """
     
     YAML = "yaml"
-    STR = "str"
+    STRING = "str"
     STRV = "str-vision"
     UD = "undefined"
     

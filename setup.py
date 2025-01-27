@@ -22,7 +22,6 @@ setup(
     author_email="18353419066@163.com",
     url="https://github.com/Asianfleet/catena",
     classifiers=[
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
@@ -32,7 +31,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     entry_points={
         "console_scripts": [
             "catena=catena.cli.cli_app:main",  # 注册命令行工具

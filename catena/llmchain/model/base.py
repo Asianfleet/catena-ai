@@ -37,13 +37,15 @@ class Model(Node):
     # 模型指标
     metrics: Optional[Dict] = Field(default_factory=dict, init=False)
     # openai 风格的工具列表
-    tools: Optional[List[Dict]] = None
+    tools: Optional[List] = None
+    # 模型内置工具
+    tools_builtin: Optional[List] = None
     # 工具调用方式。
     # 当不存在任何功能时，“none”是默认值。 
     # 如果函数存在，“auto”是默认值。
     tool_choice: Optional[Union[str, Dict[str, Any]]] = None
     # 工具调用序列
-    tool_call_sequence: Optional[List[Any]] = None
+    #tool_call_sequence: Optional[List[Any]] = None
     # 工具调用次数限制
     tool_call_limit: int = None
     # 模型运行时配置
@@ -89,13 +91,18 @@ class Model(Node):
     def completion_args(self) -> Dict[str, Any]:
         raise NotImplementedError
     
-    @model_validator(mode="after")
-    def validate_model_args(cls, values):
-        return values
+    #@model_validator(mode="after")
+    #def validate_model_args(cls, values):
+    #    return
     
     @abstractmethod
     def init_client(self) -> Any:
         """ 获取模型 client """
+        pass
+
+    @abstractmethod
+    def get_tool_call_schema(self) -> Dict[str, Any]:
+        """ 获取模型工具调用的格式 """
         pass
 
     @abstractmethod

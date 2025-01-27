@@ -3,6 +3,7 @@ import unittest
 from catena.llmchain.memory import InfMemory
 from catena.llmchain.model.oai import OpenAIOrigin
 from catena.llmchain.prompt import ModelPrompt
+from catena.agents.tools import tool
 
 class TestChain(unittest.TestCase):
     
@@ -28,6 +29,20 @@ class TestChain(unittest.TestCase):
     def test_prompt_memory_model(self):
         proc = self.prompt["mp"] >> self.memory["inf"] >> self.model["oai"]
         chain = "hello" >> proc
+        
+        completion = chain.operate()
+        print(completion)
+        self.assertIsNotNone(completion)
+
+    def test_prompt_memory_model_tool(self):
+        proc = self.prompt["mp"] >> self.memory["inf"] >> self.model["oai"]
+        chain = "今天齐河天气怎么样" >> proc
+        
+        @tool
+        def get_weather(city: str) -> str:
+            return "齐河天气晴朗" 
+        
+        get_weather("qihe")
         
         completion = chain.operate()
         print(completion)

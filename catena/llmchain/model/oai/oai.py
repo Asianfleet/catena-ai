@@ -3,13 +3,18 @@ from enum import Enum
 from packaging import version
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field, model_validator
+from datetime import datetime
 from typing import (
     Any, 
     Dict, 
     Iterator, 
-    List, 
-    Optional, 
-    Union
+    List,
+    Literal, 
+    Optional,
+    Type, 
+    Union,
+    get_origin, 
+    get_args
 )
 
 from ..base import Model
@@ -17,12 +22,13 @@ from ..metrics import Metrics
 from ...response import ModelResponse
 from ...message import Message, MessageBus
 from ....error.modelerr import ModelError
-from ....cli.tools import info, warning
+from ....cli.tools import info, warning, error
 from ....catena_core.alias.builtin import (
     NodeType as Ntype, 
     ModelProvider as Provider
 )
 from ....catena_core.callback import NodeCallback
+from ....catena_core.tools.tool_registry import ToolRegistry as Tools
 from ....catena_core.node.completion import NodeCompletion
 
 
@@ -104,6 +110,8 @@ class OpenAIOrigin(Model):
     structured_outputs: bool = False
     # 模型是否支持结构化输出。
     supports_structured_outputs: bool = True
+    # 是否显示工具调用
+    show_tool_calls: bool = False
     
     model_config = ConfigDict(
         protected_namespaces=(),
@@ -111,6 +119,12 @@ class OpenAIOrigin(Model):
     )
     
     def to_dict(self) -> Dict[str, Any]:
+        """
+        将模型实例转换为字典格式。
+
+        返回：
+            Dict[str, Any]: 包含模型基本信息的字典
+        """
         _dict = self.model_dump(include={"name", "node_id", "provider", "metrics"})
         #if self.tools_builtin:
         #    _dict["tools_builtin"] = {k: v.to_dict() for k, v in self.tools_builtin.items()}
@@ -183,6 +197,15 @@ class OpenAIOrigin(Model):
         return request_params
     
     def init_client(self) -> OpenAI:
+        """
+        初始化并返回 OpenAI 客户端实例。
+
+        返回：
+            OpenAI: 配置好的 OpenAI 客户端实例
+
+        异常：
+            ModelError: 如果未设置 OPENAI_API_KEY 环境变量
+        """
         """ 获取 OpenAI 客户端 """
         if self.client:
             return self.client
@@ -288,11 +311,12 @@ class OpenAIOrigin(Model):
         """
         assistant_message = Message(
             role=response_message.role or "assistant",
-            content=response_message.content,
+            content=response_message.content or "",
         )
         if response_message.tool_calls is not None and len(response_message.tool_calls) > 0:
             try:
                 assistant_message.tool_calls = [t.model_dump() for t in response_message.tool_calls]
+                print([t.model_dump() for t in response_message.tool_calls])
             except Exception as e:
                 warning(f"Error processing tool calls: {e}")
         if hasattr(response_message, "audio") and response_message.audio is not None:
@@ -338,12 +362,203 @@ class OpenAIOrigin(Model):
         )
     
     def create_completion_stream(self, messages: MessageBus) -> Iterator[ModelResponse]:
+        """
+        创建流式聊天完成响应。
+
+        参数：
+            messages (MessageBus): 要发送到模型的消息总线
+
+        返回：
+            Iterator[ModelResponse]: 模型响应迭代器
+        """
         pass
     
-    def execute_tool_calls(messages: MessageBus, model_response: ModelResponse):
-        pass
+    def get_tool_call_schema(self):
+        self.tools = []
+        
+        def convert_json_format(type: Type) -> str:
+            """ 将 Python 的类型转换为 JSON Schema 字符串 """
+            if type == str:
+                return "string"
+            elif type == int:
+                return "integer"
+            elif type == float:
+                return "number"
+            elif type == bool:
+                return "boolean"
+            elif type == dict:
+                return "object"
+            elif type == list:
+                return "array"
+            elif type == Literal:
+                return convert_json_format(get_args(type)[0])
+        
+        for tool in self.tools_builtin:
+            toolcall_item = {"type": "function"}
+            if hasattr(tool, "func_name"):
+                function = tool.func_name
+            else:
+                raise ValueError("Invalid tool")
+            toolcall_item["function"] = {
+                "name": function,
+                "description": tool.metadata["description"],    
+                "parameters": {
+                    "type": "object",
+                    "properties":{}
+                }
+            }
+            for (name, type), (_, desc) in zip(
+               tool.metadata["parameters"].items(), tool.metadata["param_desc"].items() 
+            ):
+                toolcall_item["function"]["parameters"]["properties"].update({
+                    name: {
+                        "type": convert_json_format(type["type"]),
+                        "description": desc
+                    } 
+                })
+                if get_origin(type["default"]) is Literal:
+                    toolcall_item["function"]["parameters"]["properties"][name].update(
+                        {"enum": list(get_args(type["default"]))}
+                    )
+            self.tools.append(toolcall_item)
     
+    # TODO: 让大模型筛选工具 
+    def execute_tool_calls(
+        self, messages: MessageBus, model_response: ModelResponse, tool_role: str
+    ) -> Union[ModelResponse, None]:
+        """执行工具调用并更新模型响应
+        
+        Args:
+            messages: 消息总线
+            model_response: 模型响应对象
+            tool_role: 工具调用角色名称
+            
+        Returns:
+            更新后的模型响应对象
+        """
+        assistant_message: Message = messages.latest
+        if not assistant_message.tool_calls or len(assistant_message.tool_calls) == 0:
+            # 没有工具调用时返回原始响应
+            return None
+        if model_response.content is None:
+            model_response.content = ""
+        model_response.content += "\nTools run:"
+        
+        for tool_call in assistant_message.tool_calls:
+            try:
+                # 验证工具调用参数
+                if not tool_call.get("function"):
+                    warning(f"Invalid tool call format: {tool_call}")
+                    continue
+                    
+                name = tool_call["function"]["name"]
+                args = tool_call["function"]["arguments"]
+                
+                # 获取工具并执行
+                tool = Tools.get_tool(name)
+                if not tool:
+                    warning(f"Tool not found: {name}")
+                    continue
+                import json
+                args = json.loads(args)
+                # 执行工具调用
+                result = tool(**args)
+                # 添加工具调用结果消息
+                messages.add(
+                    role=tool_role,
+                    tool_call_id=tool_call["id"],
+                    content=result,
+                    metrics={
+                        "tool_call_time": tool.time_elapsed,
+                        "timestamp": datetime.now().isoformat()
+                    } 
+                )
+                
+                # 如果需要显示工具调用信息
+                if self.show_tool_calls:
+                    call_str = Tools.tool_call_metadata.get(
+                        tool_call["id"], f"{name}({args})"
+                    )
+                    model_response.content += f"\n - {call_str}; return: {result}"
+                    
+            except Exception as e:
+                error(f"Error executing tool call {tool_call['id']}: {e}")
+                messages.add(
+                    role=tool_role,
+                    tool_call_id=tool_call["id"],
+                    content=f"Error: {str(e)}",
+                    metrics={"timestamp": datetime.now().isoformat()}
+                )
+                if self.show_tool_calls:
+                    model_response.content += f"\n - Error executing {name}: {e}"
+                    
+        model_response.content += "\n"
+        return model_response
+    
+    def generate_final_response(self, messages: MessageBus, model_response: ModelResponse) -> ModelResponse:
+        """
+        生成最终响应，处理工具调用后的结果。
+
+        参数：
+            messages (MessageBus): 消息总线，包含所有消息历史
+            model_response (ModelResponse): 当前的模型响应对象
+
+        返回：
+            ModelResponse: 更新后的模型响应对象，包含工具调用结果和最终响应内容
+        """
+        last_message: Message = messages.latest
+        if last_message.stop_after_tool_call:
+            if (
+                last_message.role == "assistant"
+                and last_message.content is not None
+                and isinstance(last_message.content, str)
+            ):
+                model_response.content += last_message.content
+        else:
+            response_after_tool_calls = self.response(messages)
+            model_response.content += "Model Answer:\n"
+            model_response.content += response_after_tool_calls.content
+            if response_after_tool_calls.parsed is not None:
+                # bubble up the parsed object, so that the final response has the parsed object
+                # that is visible to the agent
+                model_response.parsed = response_after_tool_calls.parsed
+            if response_after_tool_calls.audio is not None:
+                # bubble up the audio, so that the final response has the audio
+                # that is visible to the agent
+                model_response.audio = response_after_tool_calls.audio
+        return model_response
+        
     def response(self, messages: MessageBus) -> ModelResponse:
+        """
+        处理完整的模型响应流程，包括：
+        1. 生成聊天完成响应
+        2. 提取响应内容和使用数据
+        3. 解析结构化输出（如果启用）
+        4. 生成并添加助理消息
+        5. 更新模型响应内容
+        6. 处理工具调用
+        7. 生成最终响应
+
+        [参数]
+         - messages (MessageBus): 包含所有消息历史的消息总线对象
+
+        返回：
+            ModelResponse: 包含以下内容的模型响应对象：
+                - 响应内容
+                - 解析后的结构化对象（如果启用）
+                - 音频数据（如果有）
+                - 助理消息
+                - 使用指标
+
+        处理流程：
+            1. 启动计时器并生成聊天完成响应
+            2. 提取响应消息和使用数据
+            3. 如果启用结构化输出，尝试解析响应
+            4. 格式化助理消息并添加到消息总线
+            5. 更新模型响应内容和音频数据
+            6. 处理工具调用（如果有）
+            7. 返回最终的模型响应对象
+        """
         model_response = ModelResponse()
         model_metrics = Metrics()
         
@@ -368,7 +583,6 @@ class OpenAIOrigin(Model):
                     model_response.parsed = parsed_object
         except Exception as e:
             warning(f"Error retrieving structured outputs: {e}")
-            
         # 4、生成 assistant 消息
         assistant_message = self.format_assistant_message(response_message, model_metrics, response_usage)
         # 5、将 assistant 消息添加到消息列表中
@@ -387,25 +601,46 @@ class OpenAIOrigin(Model):
             # add the audio to the model response
             model_response.audio = assistant_message.audio
 
-        ## 7、处理工具调用
-        #tool_role = "tool"
-        #if (
-        #    self.execute_tool_calls(
-        #        messages=messages,
-        #        model_response=model_response,
-        #        tool_role=tool_role,
-        #    )
-        #    is not None
-        #):
-        #    return self.handle_post_tool_call_messages(messages=messages, model_response=model_response)
+        # 7、处理工具调用
+        tool_role = "tool"
+        toolcall_results = self.execute_tool_calls(
+            messages=messages,
+            model_response=model_response,
+            tool_role=tool_role,
+        )
+
+        # 如果有工具调用结果，生成最终响应
+        if toolcall_results:
+            return self.generate_final_response(
+                messages=messages,
+                model_response=model_response
+            )
         
-        info("---------- OpenAI Response End ----------")
+        #info("---------- OpenAI Response End ----------")
         return model_response
 
     async def acreate_completion(self, messages: MessageBus) -> ModelResponse:
+        """
+        异步创建聊天完成响应。
+
+        参数：
+            messages (MessageBus): 要发送到模型的消息总线
+
+        返回：
+            ModelResponse: 包含模型响应的对象
+        """
         pass
     
     async def acreate_completion_stream(self, messages: MessageBus) -> Any:
+        """
+        异步创建流式聊天完成响应。
+
+        参数：
+            messages (MessageBus): 要发送到模型的消息总线
+
+        返回：
+            Any: 模型响应迭代器
+        """
         pass
     
     def reset(self) -> None:
@@ -456,7 +691,16 @@ class OpenAIOrigin(Model):
         self.tool_call_limit = None
 
     def operate(self, input: NodeCompletion) -> NodeCompletion:
-        model_message = input.main_data
+        """
+        执行模型操作并返回完成结果。
+
+        参数：
+            input (NodeCompletion): 包含输入数据的节点完成对象
+
+        返回：
+            NodeCompletion: 包含模型响应和回调信息的节点完成对象
+        """
+        model_message: MessageBus = input.main_data
         model_response = self.response(model_message)
         model_completion = NodeCompletion(
             main_data=model_response,
@@ -465,7 +709,8 @@ class OpenAIOrigin(Model):
                 target=Ntype.MEM,
                 name="update_memory",
                 main_input=model_response.assistant_message
-            )
+            ),
+            extra_data=input.extra_data
         )
         
         return model_completion

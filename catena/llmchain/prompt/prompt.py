@@ -7,7 +7,8 @@ from typing import (
     Dict, 
     List, 
     Optional, 
-    Union
+    Union,
+    overload
 )
 from pydantic import (
     BaseModel, 
@@ -95,6 +96,13 @@ class ModelPrompt(Node):
         arbitrary_types_allowed=True
     )
     
+    def __init__(self, prompt_input: Optional[str] = None, **kwargs):
+        # 调用父类的 __init__ 方法，确保 Pydantic 的字段初始化逻辑
+        super().__init__(**kwargs)
+        # 手动设置 prompt_input
+        if prompt_input is not None:
+            self.prompt_input = prompt_input
+    
     @classmethod
     def load_prompt(
         cls, label: str, key: Optional[str] = None, resolve: bool = False
@@ -116,10 +124,10 @@ class ModelPrompt(Node):
                     Template.BUILTIN_PROMPT_PATH, file + ".yaml"
                 )
 
-        prompt = Catenaconf.load(config_path)[key]
+        loaded_prompt = Catenaconf.load(config_path)[key]
         if resolve: 
-            Catenaconf.resolve(prompt)
-        return prompt
+            Catenaconf.resolve(loaded_prompt)
+        return loaded_prompt
             
     @classmethod
     def from_template(cls, template: str, *args, **kwargs):
@@ -168,7 +176,8 @@ class ModelPrompt(Node):
             
             args: List = re.findall(r'\{(.*?)\}', template)   # 提取字符串中的变量占位符
             templ_ref: str = re.sub(r'\{.*?\}', to_cref, template)  # 将占位符替换为 Catenaconf 引用
-            instance.template_type = PType.STR
+            debug("templ_ref:", templ_ref)
+            instance.template_type = PType.STRING
            
             instance.template = Catenaconf.create({# 创建 Catenaconf 格式的模板对象
                 "system": templ_ref,
@@ -183,6 +192,8 @@ class ModelPrompt(Node):
                     }
                 }
             })
+            
+            debug("instance.template:", instance.template)
 
         return instance
 
@@ -218,7 +229,7 @@ class ModelPrompt(Node):
         
         return schema
 
-    def _simple_invoke(self, prompt_input: Union[str, Dict]) -> MessageBus:
+    def __simple_invoke(self, prompt_input: Union[str, Dict]) -> MessageBus:
         """ 
         无模板模式，此时输入应为两种情况：
         1. 字符串，直接作为用户输入；
@@ -241,7 +252,7 @@ class ModelPrompt(Node):
             #    try:
             #        retrieve = InputRetrieve(**prompt_input["retrieve"])  # 使用字典解包进行验证
             #    except ValidationError as e:
-            #        print(e.json())
+            #        debug(e.json())
             #    
             #    with Retriever(retrieve["setter"]) as retrv:
             #        retrieved = retrv.task(prompt_input["task"], **retrieve["args"])
@@ -251,7 +262,7 @@ class ModelPrompt(Node):
             
             return message
 
-    def _yaml_templ_invoke(self, prompt_input: Union[str, Dict]) -> List:
+    def __yaml_templ_invoke(self, prompt_input: Union[str, Dict]) -> List:
         #
         #有模板模式（从 yaml 文件中读取模板），此时输入应为两种情况：
         #1. 字符串，直接作为用户输入，此时内建模板必须只包含一个参数。
@@ -300,7 +311,7 @@ class ModelPrompt(Node):
         
         return self.message.deepcopy()
 
-    def _str_templ_invoke(self, prompt_input) -> MessageBus:
+    def __str_templ_invoke(self, prompt_input) -> MessageBus:
         """ 
         有模板模式（使用字符串动态创建模板），此时输入应为两种情况：
         1. 字符串，直接作为模板字符串；
@@ -377,12 +388,12 @@ class ModelPrompt(Node):
         # 根据模板类型调用不同的处理函数
         if self.template_type == PType.UD:
             output_meta = {"output": {"type": None}}
-            output_messages = self._simple_invoke(prompt_input)
+            output_messages = self.__simple_invoke(prompt_input)
         else:
-            if self.template_type == PType.STR:
-                output_messages = self._str_templ_invoke(prompt_input)
+            if self.template_type == PType.STRING:
+                output_messages = self.__str_templ_invoke(prompt_input)
             elif self.template_type == PType.YAML:
-                output_messages = self._yaml_templ_invoke(prompt_input)
+                output_messages = self.__yaml_templ_invoke(prompt_input)
             output_meta = {
                 "output": self.template.meta.output, 
                 "model_args": self.template.meta.model_args
@@ -418,14 +429,16 @@ if __name__ == '__main__':
     # prompt_input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
     # completion = prompt.operate(prompt_input)
 
-    # #print(completion.main_data.latest.to_model_message())
+    # #debug(completion.main_data.latest.to_model_message())
     
     # pm = ModelPrompt(prompt_input="你好")
     # msg = pm.operate("你好").main_data
-    # print(msg)
+    # debug(msg)
 
-    pm = ModelPrompt.from_template(
-        "/home/legion4080/Programing/catena/ww.yaml",
-        key="s"
-    )
-    print(pm.template)
+    # pm = ModelPrompt.from_template(
+    #     "/home/legion4080/Programing/catena/ww.yaml",
+    #     key="s"
+    # )
+    # debug(pm.template)
+    p = ModelPrompt("nihao")
+    debug(p.__dict__)

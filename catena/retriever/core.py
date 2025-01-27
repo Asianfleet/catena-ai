@@ -22,79 +22,79 @@ class InputRetrieve(BaseModel):
     setter: Literal["Vector", "Keyword"] = Field(default="Vector", description="检索器类型")
     args: Optional[dict] = Field(default=Preset, description="检索器参数")
 
-class VectorRetriever:
+# class VectorRetriever:
     
-    def __init__(self):
-        from chromadb import PersistentClient
-        from sentence_transformers import SentenceTransformer
-        import torchvision
-        torchvision.disable_beta_transforms_warning()
+#     def __init__(self):
+#         from chromadb import PersistentClient
+#         from sentence_transformers import SentenceTransformer
+#         import torchvision
+#         torchvision.disable_beta_transforms_warning()
 
-        self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device='cuda')
-        self.client = PersistentClient(path=LF.DB_PATH)
-        self.preset = Preset()
+#         self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', device='cuda')
+#         self.client = PersistentClient(path=LF.DB_PATH)
+#         self.preset = Preset()
 
-    def __enter__(self):
-        # 返回自身以便在 with 语句中使用
-        return self
+#     def __enter__(self):
+#         # 返回自身以便在 with 语句中使用
+#         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        # 在退出时清理资源
-        self.close()
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         # 在退出时清理资源
+#         self.close()
 
-    def query(self, query: str, **kwargs):
-        query_embedding = [self.model.encode(query).tolist()]
-        all_results = []
+#     def query(self, query: str, **kwargs):
+#         query_embedding = [self.model.encode(query).tolist()]
+#         all_results = []
 
-        db = kwargs.get('db', None) or self.preset.db
-        limit = kwargs.get('limit', None) or self.preset.limit
-        where = kwargs.get('where', None) or self.preset.where
-        seperator = kwargs.get("seperator", None) or self.preset.seperator
+#         db = kwargs.get('db', None) or self.preset.db
+#         limit = kwargs.get('limit', None) or self.preset.limit
+#         where = kwargs.get('where', None) or self.preset.where
+#         seperator = kwargs.get("seperator", None) or self.preset.seperator
 
-        # 如果 db 是一个列表，则遍历每个 collection，进行查询
-        dbs = db if isinstance(db, list) else [db]
+#         # 如果 db 是一个列表，则遍历每个 collection，进行查询
+#         dbs = db if isinstance(db, list) else [db]
 
-        for db in dbs:
-            collection = self.client.get_collection(db)
-            results = collection.query(
-                query_embeddings=query_embedding,
-                n_results=limit,
-                where=where
-            )
+#         for db in dbs:
+#             collection = self.client.get_collection(db)
+#             results = collection.query(
+#                 query_embeddings=query_embedding,
+#                 n_results=limit,
+#                 where=where
+#             )
 
-            # 如果有结果，将其加入总结果列表
-            if results and results['documents'][0]:  # 检查是否有匹配到的结果
-                for i in range(len(results['documents'][0])):
-                    all_results.append({
-                        'node_id': results['ids'][0][i],
-                        'distance': results['distances'][0][i],
-                        'metadata': results['metadatas'][0][i],
-                        'document': results['documents'][0][i]
-                    })
+#             # 如果有结果，将其加入总结果列表
+#             if results and results['documents'][0]:  # 检查是否有匹配到的结果
+#                 for i in range(len(results['documents'][0])):
+#                     all_results.append({
+#                         'node_id': results['ids'][0][i],
+#                         'distance': results['distances'][0][i],
+#                         'metadata': results['metadatas'][0][i],
+#                         'document': results['documents'][0][i]
+#                     })
 
-        # 对所有匹配的结果按距离重新排序
-        sorted_results = sorted(all_results, key=lambda x: x['distance'])
+#         # 对所有匹配的结果按距离重新排序
+#         sorted_results = sorted(all_results, key=lambda x: x['distance'])
 
-        # 取出匹配度最高的前 limit 个结果
-        top_results = sorted_results[:self.filter.limit]
+#         # 取出匹配度最高的前 limit 个结果
+#         top_results = sorted_results[:self.filter.limit]
 
-        # 提取文档并解析
-        documents = [result['document'] for result in top_results]
-        return self.parse(documents, seperator)
+#         # 提取文档并解析
+#         documents = [result['document'] for result in top_results]
+#         return self.parse(documents, seperator)
 
-    def parse(self, results: List[str], seperator: str = None):
-        if seperator:
-            return delete_list_format(results, self.filter.seperator)
-        else:
-            return results
+#     def parse(self, results: List[str], seperator: str = None):
+#         if seperator:
+#             return delete_list_format(results, self.filter.seperator)
+#         else:
+#             return results
 
-    def create(self, db: str):
-        self.collection = self.client.create_collection(db)
+#     def create(self, db: str):
+#         self.collection = self.client.create_collection(db)
    
-    def close(self):
-        import torch
-        torch.cuda.empty_cache()
-        del self.model
+    # def close(self):
+    #     import torch
+    #     torch.cuda.empty_cache()
+    #     del self.model
 
 class KeywordRetriever:
     

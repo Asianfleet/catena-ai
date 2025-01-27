@@ -78,6 +78,7 @@ class Formatter:
         console.print(cls.fc("".join(values), style))
       
 condition = "None"
+extra_condition = {}
 
 @contextmanager
 def info_condition(temp_condition, **kwargs):
@@ -85,16 +86,22 @@ def info_condition(temp_condition, **kwargs):
         global condition
         original_condition = condition
         condition = temp_condition
-        try:
-            yield
-        finally:
-            condition = original_condition
     else:
+        original_condition="None"
+
+    global extra_condition
+    original_extra = extra_condition.copy()
+    extra_condition.update(kwargs)
+    try:
         yield
+    finally:
+        condition = original_condition
+        extra_condition = original_extra
       
 def info(*values, prefix: Optional[str] = None):
     """ 输出运行信息 """
     global condition
+    global extra_condition
     condition = (
         condition 
         if condition != "None" 
@@ -104,10 +111,16 @@ def info(*values, prefix: Optional[str] = None):
         if prefix:
             pre = f"\[{prefix}|info] " 
         else:
-            match = re.search(r'\[(.*?)\]', values[0])
-            pre = f"\[{match.group(1)}|info] " if match else "\[info] "
-            newvalue = re.sub(r'\[(.*?)\]', '', values[0], count=1)
-            newvalues = (newvalue, *values[1:])
+            match = re.search(r'^\[(.*?)\]', values[0])
+            if match:
+                pre = f"\[{match.group(1)}|info] "
+                newvalue = re.sub(r'\[(.*?)\]', '', values[0], count=1)
+                newvalues = (newvalue, *values[1:])
+            else:
+                pre = "\[info] "
+                newvalues = values
+        if extra_condition.get("pre", True) == False:
+            pre = ""
         Formatter.printf(pre, *newvalues, style=None)
  
 def debug(*values, prefix: Optional[str] = None):
@@ -121,12 +134,19 @@ def warning(*values, prefix: Optional[str] = None):
     if settings.debug.enable_func_level_warning:
         if prefix:
             pre = f"\[{prefix}|warning] " 
+            newvalues = values
         else:
-            match = re.search(r'\[(.*?)\]', values[0])
-            pre = f"\[{match.group(1)}|warning] " if match else "\[warning] "
-            newvalue = re.sub(r'\[(.*?)\]', '', values[0], count=1)
-            newvalues = (newvalue, *values[1:])
-        Formatter.printf(pre, *newvalues, style="bold orange1")
+            match = re.search(r'^\[(.*?)\]', values[0])
+            if match:
+                pre = f"\[{match.group(1)}|warning] "
+                newvalue = re.sub(r'\[(.*?)\]', '', values[0], count=1)
+                newvalues = (newvalue, *values[1:])
+            else:
+                pre = "\[warning] "
+                newvalues = values
+        if extra_condition.get("pre", True) == False:
+            pre = ""
+        Formatter.printf(pre, *newvalues, style=None) 
 
 def error(*values, prefix: Optional[str] = None):
     """ 输出错误信息 """
@@ -135,7 +155,7 @@ def error(*values, prefix: Optional[str] = None):
         Formatter.printf(pre, *values, style="bold red")
        
 if __name__ == "__main__":
-    # python -m catena.catenasmith.cli_tools
+    # python -m catena.cli.tools
     #print(Style.fc("Hello, world!", "bold underline"))
     #Style.printf("Hello, world!", style="bold underline")
     
@@ -159,7 +179,5 @@ if __name__ == "__main__":
         live.stop()
         
     console.print("Done!") """
-    with info_condition(settings.visualize.message_metrics):
+    with info_condition(settings.visualize.message_metrics, pre=False):
         info("[111]warning")
-    
-    

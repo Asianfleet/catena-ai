@@ -3,6 +3,7 @@ import base64
 from typing import (
     Union, 
     List, 
+    Literal,
     Dict
 )
 
@@ -44,7 +45,7 @@ class TemplateCreater:
         
         return self.temlpate
 
-def is_url_or_base64(s):
+def is_url_or_base64(s) -> Union[Literal['URL', 'Base64'], None]:
     # 判断是否是URL
     url_pattern = re.compile(
         r'^(?:http|ftp)s?://'  # http:// or https://
@@ -66,7 +67,7 @@ def is_url_or_base64(s):
     except:
         pass
     
-    return "Neither URL nor Base64"
+    return None 
 
 
 # 示例调用

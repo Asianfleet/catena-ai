@@ -277,7 +277,7 @@ class ImageReader:
     ) -> None:
         
         self.model = model
-        self.interrogator = interrogators[self.model]
+        # self.interrogator = interrogators[self.model]
         self.threshold = threshold
         self.exclude_tags = exclude_tags
         self.rawtag = rawtag
@@ -302,21 +302,21 @@ class ImageReader:
             reverse_escaped_tags.append(tag)
         return set([*tags, *reverse_escaped_tags])  # reduce duplicates
 
-    def image_interrogate(
-        self, image_path: str, tag_escape: bool, exclude_tags: Iterable[str]
-    ) -> dict[str, float]:
-        """
-        Predictions from a image path
-        """
-        im = Image.open(image_path)
-        result = self.interrogator.interrogate(im)
+    # def image_interrogate(
+    #     self, image_path: str, tag_escape: bool, exclude_tags: Iterable[str]
+    # ) -> dict[str, float]:
+    #     """
+    #     Predictions from a image path
+    #     """
+    #     im = Image.open(image_path)
+    #     result = self.interrogator.interrogate(im)
 
-        return Interrogator.postprocess_tags(
-            result[1],
-            threshold=self.threshold,
-            escape_tag=tag_escape,
-            replace_underscore=tag_escape,
-            exclude_tags=exclude_tags)
+    #     return Interrogator.postprocess_tags(
+    #         result[1],
+    #         threshold=self.threshold,
+    #         escape_tag=tag_escape,
+    #         replace_underscore=tag_escape,
+    #         exclude_tags=exclude_tags)
     
     def generate_tags(self, image_path) -> str:
         tags = self.image_interrogate(image_path, not self.rawtag, self.parse_exclude_tags())
