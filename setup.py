@@ -20,7 +20,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Jianqing Wang",
     author_email="18353419066@163.com",
-    url="https://github.com/Asianfleet/catena",
+    url="https://github.com/Asianfleet/catena-ai",
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -34,7 +34,7 @@ setup(
     python_requires=">=3.8",
     entry_points={
         "console_scripts": [
-            "catena=catena.cli.cli_app:main",  # 注册命令行工具
+            "catena=catena_ai.cli.cli_app:main",  # 注册命令行工具
         ],
     },
 )

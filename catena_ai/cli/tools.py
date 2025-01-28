@@ -155,7 +155,7 @@ def error(*values, prefix: Optional[str] = None):
         Formatter.printf(pre, *values, style="bold red")
        
 if __name__ == "__main__":
-    # python -m catena.cli.tools
+    # python -m catena_ai.cli.tools
     #print(Style.fc("Hello, world!", "bold underline"))
     #Style.printf("Hello, world!", style="bold underline")
     

@@ -17,5 +17,5 @@ def main():
     app()
 
 if __name__ == "__main__":
-    # python -m catena.cli.app
+    # python -m catena_ai.cli.app
     main()

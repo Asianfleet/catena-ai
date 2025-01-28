@@ -286,7 +286,7 @@ class MessageBus(deque[Message]):
         return self.latest
 
 if __name__ == "__main__":
-    # python -m catena.llmchain.message
+    # python -m catena_ai.llmchain.message
     message = Message(
         role="user",
         content="nihao",

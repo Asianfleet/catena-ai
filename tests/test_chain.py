@@ -1,9 +1,9 @@
 import unittest
 
-from catena.llmchain.memory import InfMemory
-from catena.llmchain.model.oai import OpenAIOrigin
-from catena.llmchain.prompt import ModelPrompt
-from catena.agents.tools import tool
+from catena_ai.llmchain.memory import InfMemory
+from catena_ai.llmchain.model.oai import OpenAIOrigin
+from catena_ai.llmchain.prompt import ModelPrompt
+from catena_ai.agents.tools import tool
 
 class TestChain(unittest.TestCase):
     

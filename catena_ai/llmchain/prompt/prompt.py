@@ -416,7 +416,7 @@ class PromptBuiltIn(Node):
 
 
 if __name__ == '__main__':
-    # python -m catena.llmchain.prompt.prompt
+    # python -m catena_ai.llmchain.prompt.prompt
     # settings.configure(disable_visualize=True)
     # str_tem = """
     # 下面你要完成一个任务，按照给定的要求，并且参照给定的图片。
@@ -436,7 +436,7 @@ if __name__ == '__main__':
     # debug(msg)
 
     # pm = ModelPrompt.from_template(
-    #     "/home/legion4080/Programing/catena/ww.yaml",
+    #     "/home/legion4080/Programing/catena_ai/ww.yaml",
     #     key="s"
     # )
     # debug(pm.template)

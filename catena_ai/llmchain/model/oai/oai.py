@@ -716,7 +716,7 @@ class OpenAIOrigin(Model):
     
     
 if __name__ == "__main__":
-    # python -m catena.llmchain.model.oai.oai
+    # python -m catena_ai.llmchain.model.oai.oai
     oai_model = OpenAIOrigin()
     #cpl = oai_model.create_completion(messages=MessageBus([Message(role="user", content="你好")]))
     class ResponseFormat(BaseModel):

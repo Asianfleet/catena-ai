@@ -117,7 +117,7 @@ class StaticTool(Tool, ABC):
         """ 验证输出结果 """
 
 if __name__ == "__main__":
-    # python -m catena.agents.tools.static
+    # python -m catena_ai.agents.tools.static
     
     class TestTool(StaticTool):
         """ 工具测试类 """

@@ -25,15 +25,15 @@ from ...llmchain.model.minimal.llm import minimal_llm_response
 # 将路径拆分为各个部分
 parts = os.path.dirname(os.path.abspath(__file__)).split(os.sep)
 
-# 找到第二个 'catena' 的索引
+# 找到第二个 'catena_ai' 的索引
 try:
-    index = [i for i, part in enumerate(parts) if part == 'catena'][1]
+    index = [i for i, part in enumerate(parts) if part == 'catena_ai'][1]
 except IndexError:
-    raise ValueError("路径中没有第二个 'catena'")
+    raise ValueError("路径中没有第二个 'catena_ai'")
 
-# 获取第二个 'catena' 之前的路径
+# 获取第二个 'catena_ai' 之前的路径
 top_path = os.path.join(*parts[:index])
-FUNCTION_CACHE = os.path.join("/", top_path, "catena/.data/.cache/functions_impl.pkl")
+FUNCTION_CACHE = os.path.join("/", top_path, "catena_ai/.data/.cache/functions_impl.pkl")
 
 
 @dataclass
@@ -391,7 +391,7 @@ f"""
     
     
 if __name__ == "__main__":
-    # python -m catena.catena_core.tools.function
+    # python -m catena_ai.catena_core.tools.function
     # def format(input: str, repeat: int = 2) -> str:
     #     """ 将输入字符串的第一个字母按照repeat次重复后输出 """
     

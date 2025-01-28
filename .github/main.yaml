@@ -34,6 +34,6 @@ jobs:
         files: ./coverage.xml
         flags: unittests
         token: ${{ secrets.CODECOV_TOKEN }}
-        slug: Asianfleet/catena
+        slug: Asianfleet/catena-ai
         name: codecov-catena-test
         fail_ci_if_error: true

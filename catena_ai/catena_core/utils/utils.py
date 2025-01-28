@@ -73,7 +73,7 @@ def is_url_or_base64(s) -> Union[Literal['URL', 'Base64'], None]:
 # 示例调用
 if __name__ == "__main__":
     # 示例图片路径或 Base64 字符串
-    # python -m catena.catena_core.utils.utils
+    # python -m catena_ai.catena_core.utils.utils
     image_paths = [
         "/home/legion4080/AIPJ/MYXY/background.png",  # 替换为实际图片路径
         "/home/legion4080/AIPJ/MYXY/boy.png"   # 替换为实际图片路径

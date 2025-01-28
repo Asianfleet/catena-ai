@@ -150,7 +150,7 @@ def init_memory(memory_type: MemoryType = MemoryType.INF):
 
 
 if __name__ == "__main__":
-    # python -m catena.llmchain.memory.memory
+    # python -m catena_ai.llmchain.memory.memory
     mem = InfMemory(system_prompt="你是一个助手")
     mem.add_(MessageRole.user("你好"))
     mem.add_(MessageRole.system("系统提示词"))

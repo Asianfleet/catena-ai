@@ -67,7 +67,7 @@ def minimal_llm_response(
     return response.choices[0].message.content
 
 if __name__ == "__main__":
-    # python -m catena.llmchain.model.minimal.llm
+    # python -m catena_ai.llmchain.model.minimal.llm
     print(minimal_llm_response(
         model="gpt-4o-mini",
         messages=[

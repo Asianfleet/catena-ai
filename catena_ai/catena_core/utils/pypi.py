@@ -4,14 +4,14 @@ from typing import Union
 
 from error.utilserr import PackageNotFoundFronPypiError
 
-def get_installed_version(package_name: str = "catena") -> Union[str, None]:
+def get_installed_version(package_name: str = "catena-ai") -> Union[str, None]:
     try:
         return importlib.metadata.version(package_name)
     except importlib.metadata.PackageNotFoundError(package_name) as e:
         print(e)
         return None
 
-def get_versions_from_pypi(package_name: str = "catena"):
+def get_versions_from_pypi(package_name: str = "catena-ai"):
     url = f"https://pypi.org/pypi/{package_name}/json"
     response = requests.get(url)
     try:
@@ -22,7 +22,7 @@ def get_versions_from_pypi(package_name: str = "catena"):
     except PackageNotFoundFronPypiError(code = response.status_code) as e:
         print(e)
 
-def check_update(package_name: str = "catena") -> bool:
+def check_update(package_name: str = "catena-ai") -> bool:
 
     installed_version = get_installed_version(package_name)
     versions_from_pypi = get_versions_from_pypi(package_name)
@@ -36,7 +36,7 @@ def check_update(package_name: str = "catena") -> bool:
         print(f"[check_update] Check update failed.")
         return False
         
-def get_package_info(package_name: str = "catena"):
+def get_package_info(package_name: str = "catena-ai"):
     # 向 PyPI 的 API 发送请求
     response = requests.get(f"https://pypi.org/pypi/{package_name}/json")
     if response.status_code == 200:

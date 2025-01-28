@@ -1,5 +1,5 @@
 import unittest
-from catena.llmchain.message import Message, MessageBus, MessageRole
+from catena_ai.llmchain.message import Message, MessageBus, MessageRole
 
 class TestMessage(unittest.TestCase):
     def setUp(self):

@@ -189,5 +189,5 @@ class Model(Node):
 
 
 if __name__ == "__main__":
-    # python -m catena.llmchain.model.base
+    # python -m catena_ai.llmchain.model.base
     Model()

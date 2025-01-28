@@ -1,8 +1,8 @@
 import unittest
 
 from pydantic import BaseModel
-from catena.llmchain.model.oai.oai import OpenAIOrigin
-from catena.llmchain.message import Message, MessageBus
+from catena_ai.llmchain.model.oai.oai import OpenAIOrigin
+from catena_ai.llmchain.message import Message, MessageBus
 
 class TestOpenAIOrigin(unittest.TestCase):
     def setUp(self):

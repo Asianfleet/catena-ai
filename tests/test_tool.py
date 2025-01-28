@@ -1,11 +1,11 @@
 import unittest
 from typing import Any
 
-from catena.error import toolserr
-from catena.agents.tools import tool, StaticTool
-from catena.catena_core.tools import Tool
-from catena.catena_core.utils.timer import record_time
-from catena.catena_core.tools.tool_registry import ToolRegistry
+from catena_ai.error import toolserr
+from catena_ai.agents.tools import tool, StaticTool
+from catena_ai.catena_core.tools import Tool
+from catena_ai.catena_core.utils.timer import record_time
+from catena_ai.catena_core.tools.tool_registry import ToolRegistry
 
 class TestToolDecorator(unittest.TestCase):
     """测试工具装饰器"""

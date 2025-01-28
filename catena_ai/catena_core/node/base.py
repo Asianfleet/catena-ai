@@ -542,6 +542,6 @@ def encapsulate(obj: Any) -> Node:
 
 
 if __name__ == "__main__":
-    # python -m catena.catena_core.node.base
+    # python -m catena_ai.catena_core.node.base
     #pipe = Node() >> Node()
     pass
