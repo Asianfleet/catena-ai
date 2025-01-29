@@ -3,7 +3,6 @@ from openai import OpenAI
 
 from ....settings import settings
 
-
 class Role:
     """
     - 用于处理和包装大模型对话提示信息的工具类。功能是将不同角色的对话内容（例如系统、用户、助手等）格式化。
@@ -44,7 +43,7 @@ def init_minimal_client(provider: str = "OpenAI"):
         raise ValueError(f"Unknown model {provider}")
     
 
-def minimal_llm_response(
+def system_llm_response(
     model: str = "gpt-4o-mini",
     messages: Union[List, str] = None,
     **kwargs
@@ -52,9 +51,9 @@ def minimal_llm_response(
     
     client = init_minimal_client()
     if kwargs:
-        response_args = settings.minimal_llm.config.__container__.update(kwargs)
+        response_args = settings.system_llm.config.__container__.update(kwargs)
     else:
-        response_args = settings.minimal_llm.config.__container__
+        response_args = settings.system_llm.config.__container__
     
     if isinstance(messages, str):
         messages = [Role.user(messages)]    
@@ -68,7 +67,7 @@ def minimal_llm_response(
 
 if __name__ == "__main__":
     # python -m catena_ai.llmchain.model.minimal.llm
-    print(minimal_llm_response(
+    print(system_llm_response(
         model="gpt-4o-mini",
         messages=[
             Role.user("你好")

@@ -19,7 +19,7 @@ from ...error import toolserr
 from ...cli.tools import warning, info
 from ...catena_core.utils.timer import record_time
 from ...llmchain.message import MessageRole as MsgRole
-from ...llmchain.model.minimal.llm import minimal_llm_response
+from ...llmchain.model.minimal.llm import system_llm_response
 
 
 # 将路径拆分为各个部分
@@ -321,7 +321,7 @@ f"""
             )
         ]
         # 生成函数代码
-        llm_response = minimal_llm_response(
+        llm_response = system_llm_response(
             model="gpt-4o-mini",
             messages=llm_prompt
         )

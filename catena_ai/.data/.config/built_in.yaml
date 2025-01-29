@@ -1,0 +1,24 @@
+prompt:
+   image_concat_direction: null
+chain:
+  concurrecy_limit: 10
+  enable_visualize: False
+  visualize_type: null
+log:
+  enable_chain_visualize: False
+  enable_info: True
+  enable_debug: False
+  enable_warning: True
+  enable_error: True
+visualize:
+  metrics: False
+  message_metrics: False
+  model_resp_metrics: False
+style:
+  chain_start: "[bold green]"
+  chain_end: "[bold gray]"
+  chain_spacer: ▬
+  spacer_repeat: 50
+  completion_mark: "-"
+agent:
+  type: null

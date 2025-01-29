@@ -3,7 +3,7 @@ from typing import Union, Literal, Union, Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from catenaconf import Catenaconf
 
-from ..catena_core.paths import llmconf as LF
+from ..paths import llmconf as LF
 from ..catena_core.utils.format_builtin import delete_list_format
 from ..catena_core.node.base import Node
 from ..settings import RTConfig

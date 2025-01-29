@@ -1,7 +1,7 @@
 import os
 from typing import Union, List
 from catenaconf import Catenaconf, KvConfig
-from ..catena_core.paths import llmconf
+from ..paths import llmconf
 
 from catenaconf import Catenaconf
 

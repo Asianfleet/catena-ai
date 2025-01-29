@@ -19,7 +19,7 @@ from pydantic import (
 
 from ..message import Message, MessageBus, MessageRole
 #from ...retriever import Retriever, InputRetrieve
-from ...catena_core.paths import Template
+from ...paths import Template
 from ...catena_core.utils.utils import is_url_or_base64
 from ...catena_core.node.base import Node, NodeBus, NodeCompletion
 from ...catena_core.alias.builtin import (

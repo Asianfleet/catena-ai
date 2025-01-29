@@ -38,11 +38,11 @@ sty.printf(rough_str, style=sty.BG)
 ```python
 from src.modules.agent.settings import settings # 已经在脚本中实例化
 
-print("origin config: ", settings.debug.config)
+print("origin config: ", settings.log.config)
 
-settings.debug.configure(enable_func_level_debug=True)
+settings.log.configure(enable_debug=True)
 
-print("overrided config: ", settings.debug.config)
+print("overrided config: ", settings.log.config)
 ```
 
 <details>
@@ -50,8 +50,8 @@ print("overrided config: ", settings.debug.config)
 <summary>运行结果：</summary>
 
 ```bash
-origin config:  {'enable_chain_visualize': True, 'enable_func_level_debug': False, 'enable_func_level_info': True}
-overrided config:  {'enable_chain_visualize': True, 'enable_func_level_debug': True, 'enable_func_level_info': True}
+origin config:  {'enable_chain_visualize': True, 'enable_debug': False, 'enable_info': True}
+overrided config:  {'enable_chain_visualize': True, 'enable_debug': True, 'enable_info': True}
 ```
 
 </details>
@@ -256,7 +256,7 @@ else:
 ```python
 def info(*values):
     """ 输出运行信息 """
-    if settings.debug.enable_func_level_info:
+    if settings.log.enable_info:
         print(*values)
 ```
 
@@ -265,6 +265,6 @@ def info(*values):
 ```python
 def debug(*values):
     """ 输出调试信息 """
-    if settings.debug.enable_func_level_debug:
+    if settings.log.enable_debug:
         print(*values)
 ```

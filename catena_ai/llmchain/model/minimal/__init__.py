@@ -1,6 +1,6 @@
-from .llm import minimal_llm_response, Role
+from .llm import system_llm_response, Role
 
 __all__ = [
-    "minimal_llm_response",
+    "system_llm_response",
     "Role"
 ]

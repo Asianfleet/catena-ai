@@ -184,7 +184,7 @@ class TreeVisualizer(ConsoleVisualizer):
                 else:
                     input = node.input
             # 检查是否禁用了可视化调试        
-            if config().get("chain_vis", False) or not settings.debug.enable_chain_visualize:
+            if config().get("chain_vis", False) or not settings.log.enable_chain_visualize:
                 debug("[TreeVisualizer.visualize] 可视化输出关闭关闭")
                 result = func(node, input, config, *args, **kwargs)
             else:

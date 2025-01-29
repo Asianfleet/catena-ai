@@ -105,7 +105,7 @@ def info(*values, prefix: Optional[str] = None):
     condition = (
         condition 
         if condition != "None" 
-        else settings.debug.enable_func_level_info
+        else settings.log.enable_info
     )
     if condition:
         if prefix:
@@ -125,13 +125,13 @@ def info(*values, prefix: Optional[str] = None):
  
 def debug(*values, prefix: Optional[str] = None):
     """ 输出调试信息 """
-    if settings.debug.enable_func_level_debug:
+    if settings.log.enable_debug:
         pre = f"\[{prefix}.info] " if prefix else "\[info] "
         Formatter.printf(pre, *values, style="bold")       
 
 def warning(*values, prefix: Optional[str] = None):
     """ 输出警告信息 """
-    if settings.debug.enable_func_level_warning:
+    if settings.log.enable_warning:
         if prefix:
             pre = f"\[{prefix}|warning] " 
             newvalues = values
@@ -150,7 +150,7 @@ def warning(*values, prefix: Optional[str] = None):
 
 def error(*values, prefix: Optional[str] = None):
     """ 输出错误信息 """
-    if settings.debug.enable_func_level_error:
+    if settings.log.enable_error:
         pre = f"\[{prefix}.info] " if prefix else "\[info] "
         Formatter.printf(pre, *values, style="bold red")
        

@@ -8,16 +8,25 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 from catenaconf import Catenaconf, KvConfig
     
-# 默认配置
-DEFAULT_CONFIG = Catenaconf.create({           
-    "concurrecy_limit": 10,          # 并发限制
-})
+# 获取当前脚本的绝对路径
+current_script_path = os.path.abspath(__file__)
+src_folder = os.path.dirname(current_script_path)
+LIB_BASEPATH = os.path.dirname(src_folder)    
+    
+class Paths:
+    
+    CONFIG_PATH = os.path.join(LIB_BASEPATH, "catena_ai/.data", ".config")
+    BUILTIN_PROMPT_PATH = os.path.join(LIB_BASEPATH, ".data", ".templates")
+    
+CONFIG = Catenaconf.load(
+    os.path.join(Paths.CONFIG_PATH, "built_in.yaml")
+)
 
-PROMPT_CONFIG = Catenaconf.create({
-    "image_concat_direction": None,  # 图片拼接方向（UD-上下；LR-左右；为空则不进行拼接）
-})
+EXTRA_CONFIG = Catenaconf.load(
+    os.path.join(Paths.CONFIG_PATH, "extra.yaml")
+)
 
-LM_CONFIG = Catenaconf.create({
+SYSTEM_LLM_CONFIG = Catenaconf.create({
     "model_name": "",
     "enable_lm_refinement": False,   # 是否启用提示词优化
 })     
@@ -35,48 +44,11 @@ LLM_CONFIG = Catenaconf.create({
     
 })
 
-LOG_CONFIG = Catenaconf.create({
-    "enable_chain_visualize": True,     # 可视化管道内部过程
-    "enable_func_level_debug": False,   # 输出函数级别的调试信息
-    "enable_func_level_info": True,     # 输出函数级别的信息
-    "enable_func_level_warning": True,  # 输出函数级别的警告
-    "enable_func_level_error": True     # 输出函数级别的错误
-})
-
-VISUALIZE_CONFIG = Catenaconf.create({
-    "visualize_type": "tree",
-    "metrics": False,
-    "message_metrics": False,
-    "model_resp_metrics": False
-})
-
-STYLE_CONFIG = Catenaconf.create({
-    "chain_start": "[bold green]",
-    "chain_end": "[bold gray]",
-    "chain_spacer": "▬",
-    "spacer_repeat": 50,
-    "completion_mark": "-"
-})
-
-AGENT_CONFIG = Catenaconf.create({
-    "agent_type": "patterned",
-    "pattern": "default",
-    "enable_agent_visualize": True,
-    "enable_agent_debug": False,
-    "enable_agent_info": True
-})
-
-MINIMAL_LLM_CONFIG = Catenaconf.create({
-    "max_tokens": 1024,
-    "temperature": 0.3,
-    
-})
-
 class BaseSettings:
     """ configuration settings."""
 
     _instance = None
-    _DEFAULT_CONFIG = DEFAULT_CONFIG
+    _DEFAULT_CONFIG = CONFIG.deepcopy
     
     def __new__(cls, CONFIG = None):
         """
@@ -153,48 +125,48 @@ class BaseSettings:
 
 class PromptSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = PROMPT_CONFIG
+    _DEFAULT_CONFIG = CONFIG.prompt.deepcopy
  
-class LMSettings(BaseSettings):
+class SystemLLMSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = LM_CONFIG
+    _DEFAULT_CONFIG = SYSTEM_LLM_CONFIG
  
 class LLMSettings(BaseSettings):
     _instance = None
     _DEFAULT_CONFIG = LLM_CONFIG
  
-class DebugSettings(BaseSettings):
+class LogSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = LOG_CONFIG
+    _DEFAULT_CONFIG = CONFIG.log.deepcopy
  
 class VisualizeSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = VISUALIZE_CONFIG
+    _DEFAULT_CONFIG = CONFIG.visualize.deepcopy
 
 class StyleSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = STYLE_CONFIG
+    _DEFAULT_CONFIG = CONFIG.style.deepcopy
 
 class AgentSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = AGENT_CONFIG
-
-class Minimal_LLMSettings(BaseSettings):
+    _DEFAULT_CONFIG = CONFIG.agent.deepcopy
+    
+class ExtraSettings(BaseSettings):
     _instance = None
-    _DEFAULT_CONFIG = MINIMAL_LLM_CONFIG
+    _DEFAULT_CONFIG = EXTRA_CONFIG
 
 @dataclass
 class Settings:
     """ 存储所有配置的类 """
     base: BaseSettings = BaseSettings()
-    lm: BaseSettings = LMSettings()
     llm: BaseSettings = LLMSettings()
-    debug: BaseSettings = DebugSettings()
+    debug: BaseSettings = LogSettings()
     visualize: BaseSettings = VisualizeSettings()
     prompt: BaseSettings = PromptSettings()
     style: BaseSettings = StyleSettings()
     agent: BaseSettings = AgentSettings()
-    minimal_llm: BaseSettings = Minimal_LLMSettings()
+    system_llm: BaseSettings = SystemLLMSettings()
+    extra: BaseSettings = ExtraSettings()
 
 settings = Settings()
 
@@ -289,15 +261,16 @@ class RTConfig:
 
 def info(*values):
     """ 输出运行信息 """
-    if settings.debug.enable_func_level_info:
+    if settings.log.enable_info:
         print(*values)
  
 def debug(*values):
     """ 输出调试信息 """
-    if settings.debug.enable_func_level_debug:
+    if settings.log.enable_debug:
         print(*values)
 
 if __name__ == "__main__":
+    
     """ class DSPySettings:
         #DSP configuration settings.
 
@@ -373,14 +346,15 @@ if __name__ == "__main__":
         def __repr__(self) -> str:
             return repr(self.config) """
 
+    print(settings.base)
 
-    settings.base.configure(tt=1)
+    """ settings.base.configure(tt=1)
     print(settings.base.config)
-    print(settings.debug.enable_func_level_info)
+    print(settings.log.enable_info)
     cfg = RTConfig({"a": 1, "b": 2})
     print(cfg.unwrap)
-    settings.debug.configure(enable_func_level_info=True)
-    info("test:", "test")
+    settings.log.configure(enable_info=True)
+    info("test:", "test") """
     
     """ cfg=RTConfig({"a": 1, "b": 2, "c": {"d": {"f": 5}, "e": 4}})
     cfg1 = {"g": 5, "h": 6}
