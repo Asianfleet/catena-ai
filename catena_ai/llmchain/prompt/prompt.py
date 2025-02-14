@@ -382,7 +382,10 @@ class ModelPrompt(Node):
         """  """
         
         if not isinstance(input, NodeCompletion):
-            completion = NodeCompletion()
+            completion = NodeCompletion(
+                type=Ntype.PRM,
+                extra_data=RT()
+            )
             completion.update(main_data=input)
         else:
             completion = input
