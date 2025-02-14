@@ -23,17 +23,10 @@ from ...llmchain.model.minimal.llm import system_llm_response
 
 
 # 将路径拆分为各个部分
-parts = os.path.dirname(os.path.abspath(__file__)).split(os.sep)
+base_path = os.path.dirname(os.path.abspath(__file__))
+catena_ai_path = os.path.dirname(os.path.dirname(base_path))
 
-# 找到第二个 'catena_ai' 的索引
-try:
-    index = [i for i, part in enumerate(parts) if part == 'catena_ai'][1]
-except IndexError:
-    raise ValueError("路径中没有第二个 'catena_ai'")
-
-# 获取第二个 'catena_ai' 之前的路径
-top_path = os.path.join(*parts[:index])
-FUNCTION_CACHE = os.path.join("/", top_path, "catena_ai/.data/.cache/functions_impl.pkl")
+FUNCTION_CACHE = os.path.join(catena_ai_path, ".data/.cache/functions_impl.pkl")
 
 
 @dataclass
