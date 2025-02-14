@@ -291,9 +291,9 @@ class NodeChain(BaseModel):
                 
                 # 确保节点的继承关系
                 for node in self.chain:
-                    if node.__class__.mro().index(Node) > 2:
+                    if node.__class__.mro().index(Node) > 3:
                         raise ChainCompileError(
-                            "Node classe allow at most second-level inheritance"
+                            "Node classe allow at most third-level inheritance"
                         )
                 self.chain_id: List = [node.nid for node in self.chain]
                 self.chain_name: List = [node.signature for node in self.chain]
