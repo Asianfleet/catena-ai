@@ -160,7 +160,7 @@ class Settings:
     """ 存储所有配置的类 """
     base: BaseSettings = BaseSettings()
     llm: BaseSettings = LLMSettings()
-    debug: BaseSettings = LogSettings()
+    log: BaseSettings = LogSettings()
     visualize: BaseSettings = VisualizeSettings()
     prompt: BaseSettings = PromptSettings()
     style: BaseSettings = StyleSettings()

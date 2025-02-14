@@ -115,8 +115,8 @@ class ModelPrompt(Node):
             config_path = label
         else:
             labels = label.split(".")    
-            if len(labels) == 0:
-                raise ValueError("invalid label")
+            if len(labels) == 1:
+                return None
             if len(labels) == 2:
                 file = label.split(".")[0]
                 key = label.split(".")[1]
@@ -348,7 +348,12 @@ class ModelPrompt(Node):
                         self.template.meta.param[arg] = value
         # 此时模板必须只有一个参数
         else:   
-            if len(self.template.meta.param) != 1:
+            if self.template.meta.param == {}:
+                system_message.content = self.template.system
+                user_message: Message = MessageRole.user(content=prompt_input)
+                return MessageBus([system_message, user_message])
+            
+            if len(self.template.meta.param) == 1:
                 raise ValueError("模板参数数量错误")
             if isinstance(prompt_input, List):
                 key = list(self.template.meta.param.keys())
@@ -418,14 +423,13 @@ class PromptBuiltIn(Node):
 if __name__ == '__main__':
     # python -m catena_ai.llmchain.prompt.prompt
     # settings.configure(disable_visualize=True)
-    # str_tem = """
-    # 下面你要完成一个任务，按照给定的要求，并且参照给定的图片。
-    # 要求：{request}
-    # 图片：{image}
-    # """
-
-    # prompt = ModelPrompt.from_template(str_tem)
+    str_tem = """
+    下面你要完成一个任务，按照给定的要求，并且参照给定的图片。
     
+    """
+
+    prompt = ModelPrompt.from_template(str_tem)
+    pipe = "你好" >> prompt
     # prompt_input = {"request": "gushigushigushi", "image":["1", "2", "3"]}
     # completion = prompt.operate(prompt_input)
 
@@ -440,5 +444,6 @@ if __name__ == '__main__':
     #     key="s"
     # )
     # debug(pm.template)
-    p = ModelPrompt("nihao")
-    debug(p.__dict__)
+    # p = ModelPrompt("nihao")
+    # debug(p.__dict__)
+    # print(pipe.operate())
