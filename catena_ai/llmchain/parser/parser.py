@@ -1,17 +1,19 @@
 import re
 import json
 import traceback
+from pydantic import Field
 from jsonschema import validate
 from abc import ABC, abstractmethod
 from typing import (
     Any,
+    Dict,
     Union, 
     List
 )
 
 from ...catena_core.callback.node_callback import NodeCallback
 from ...settings import RTConfig, info
-from ...catena_core.node.base import Node, NodeBus
+from ...catena_core.node.base import Node, NodeCompletion
 from ...catena_core.alias.builtin import NodeType
 from ...catena_core.utils.format_json import delete_json_format
 from ...catenasmith.visualize.cli_visualize import cli_visualize
@@ -29,14 +31,18 @@ class BaseOutputChecker(ABC):
         return cls.check(parser_input, **kwargs)
 
 class StrOutputChecker(BaseOutputChecker):
-    def check(self, input: Union[List[str],str]) -> Union[List[str],str]:
-        return input + "_parsed"
+    def check(self, input: str, pattern: str) -> Union[int, str]:
+        """ 检查输入字符串是否与给定的正则模式匹配 """
+        if re.fullmatch(pattern, input):
+            return input
+        else:
+            return -1
 
 class JsonOutputChecker(BaseOutputChecker):
     """ JsonOutputChecker类，用于检查 Json 格式的大模型输出 """
 
     @classmethod
-    def check(cls, parser_input: str, **kwargs) -> Union[List[str],str]:
+    def check(cls, parser_input: str, **kwargs) -> Union[Dict, int]:
         """
         检查输入是否为有效的 Json 格式，并是否符合指定的模式。
         
@@ -49,6 +55,8 @@ class JsonOutputChecker(BaseOutputChecker):
         """
         try:
             parser_input = json.loads(parser_input)
+            if not kwargs.get("schema"):
+                return parser_input
             validate(instance=parser_input, schema=kwargs.get("schema"))
             return parser_input
         except Exception:
@@ -60,7 +68,7 @@ class CodeBlockOutputChecker(BaseOutputChecker):
     """ CodeBlockOutputChecker类，用于检查代码块格式 """
 
     @classmethod
-    def check(cls, input: Union[List[str],str]) -> Union[List[str],str]:
+    def check(cls, input: str) -> Union[List[str],str]:
         """
         检查输入是否为有效的代码块格式，并返回解析后的代码内容。
         
@@ -77,24 +85,19 @@ class CodeBlockOutputChecker(BaseOutputChecker):
             # 执行查找
             match = re.search(pattern, input, re.DOTALL)
             # 获取代码块内容
-            code_content = match.group(1) if match else None
+            code_content = match.group(1) if match else -1
          
             return code_content
-            
-        if isinstance(input, str):
-            return single_parse(input)
-        else:
-            return [single_parse(inp) for inp in input]
+        
+        return single_parse(input)
+       
             
 class LLMOutputParser(Node):
     """ 大模型输出解析模块 """
 
-    node_id = NodeType.PARSER
-
-    def __init__(self):
-        super().__init__("bold yellow")
+    node_id = Field(default=NodeType.PARSER, init=False)
     
-    def check(self, input: Union[str, List], config: RTConfig = None):
+    def check(self, input: str, type: str = None, **kwargs):
         """
         对大模型输出进行格式检查
 
@@ -104,15 +107,14 @@ class LLMOutputParser(Node):
         Return: 解析后的结果
         """
 
-        content = input if isinstance(input, str) else input["content"]
-        if not config:
+        content = input 
+        if not type:
             return content
-        elif config().output.type == "text":
-            return StrOutputChecker()(content, config().output.re_pattern)
-        elif config().output.type == "json_object":
-            schema = config.unwrap
-            return JsonOutputChecker()(content, schema=schema)
-        elif config().output.type == "codeblock":
+        elif type == "text":
+            return StrOutputChecker()(content, kwargs.get("pattern"))
+        elif type == "json_object":
+            return JsonOutputChecker()(content, schema=kwargs.get("schema"))
+        elif type == "codeblock":
             return CodeBlockOutputChecker()(content)
         else:
             return content
@@ -155,11 +157,13 @@ class LLMOutputParser(Node):
         return parsed
     
     @cli_visualize
-    def operate(
-        self, input: Union[str, List], config: RTConfig=None, *args, **kwargs
-    ):
+    def operate(self, input: NodeCompletion) -> NodeCompletion:
 
-        check_result = self.check(input, config)
+        
+        check_result = self.check(
+            input.main_data,
+            **input.extra_data.unwrap
+        )
         
         if check_result == -1:
             cb = NodeCallback(
@@ -169,8 +173,10 @@ class LLMOutputParser(Node):
             )
         else:
             cb = NodeCallback()  
-        return NodeBus(
-            NodeType.PARSERPAOP, check_result, args, kwargs, config, cb
+        return NodeCompletion(
+            main_data=check_result,
+            extra_data=input.extra_data,
+            callback=cb
         )
 
                 
