@@ -354,6 +354,9 @@ class OpenAIOrigin(Model):
             except Exception as e:
                 raise e
         # 4、否则，直接返回 API 响应
+        """ with open("debug.txt", "w") as d:
+            d.write(str(messages.model_message)) """
+            
         return self.init_client().chat.completions.create(
             model=self.model,
             messages=messages.model_message,  # type: ignore

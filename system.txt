@@ -1,0 +1,1 @@
+{"role":"system","content":"你需要描述提供的图片的内容","tool_calls":null,"tool_call_builtin":null,"tool_call_id":null,"stop_after_tool_call":false,"name":null,"audio":null,"images":null,"videos":null,"context":null,"runtime_args":{},"metrics":{},"created_at":1739983904}

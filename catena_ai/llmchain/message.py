@@ -118,7 +118,7 @@ class Message(BaseModel):
     
     # 其他模态信息
     audio: Optional[Any] = None
-    images: Optional[Sequence[Any]] = None
+    images: Optional[Union[str,List]] = None
     videos: Optional[Sequence[Any]] = None
     
     # 上下文信息，主要与 RAG 结合 
@@ -152,6 +152,14 @@ class Message(BaseModel):
 
     def to_model_message(self) -> Dict[str, Any]:
         """ 将 Message 对象转换为模型消息列表 """
+    
+        """ if self.role == "system":
+            with open("system.txt", "w") as attr:
+                attr.write(str(self.model_dump_json()))
+        else:
+            with open("user.txt", "w") as attr:
+                attr.write(str(self.model_dump_json())) """
+        
         _message = self.model_dump(
             exclude_none=True,
             include={"role", "content", "audio", "name", "tool_call_id", "tool_calls"},
@@ -161,29 +169,17 @@ class Message(BaseModel):
         
         if self.images:
             # 处理带图片的消息
-            from ..catena_core.utils.image import to_base64, concat_images
-            if settings.prompt.image_concat_direction:
-                direction = settings.prompt.image_concat_direction
-                img_concated = concat_images(self.images, direction)
-                image_base64 = to_base64(img_concated)
-                _message["content"] = [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
-                    },
-                    {"type": "text", "text": self.content}
-                ]
-                return _message
-            if isinstance(self.images, list):
-                _message["content"] = []
-                for img in self.images:
-                    image_base64 = to_base64(img)
-                    _message["content"].append({
-                        "type": "image_url",
-                        "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
-                    })
-                _message["content"].append({"type": "text", "text": self.content})
-                return _message
+            from ..catena_core.utils.image import to_base64
+            images = self.images if isinstance(self.images, List) else [self.images]
+            _message["content"] = []
+            for img in images:
+                image_base64 = to_base64(img)
+                _message["content"].append({
+                    "type": "image_url",
+                    "image_url": {"url":f"data:image/jpeg;base64,{image_base64}"}
+                })
+            _message["content"].append({"type": "text", "text": self.content})
+            return _message
 
         return _message
 

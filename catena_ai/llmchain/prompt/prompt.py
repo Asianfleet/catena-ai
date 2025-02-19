@@ -348,9 +348,19 @@ class ModelPrompt(Node):
                         self.template.meta.param[arg] = value
         # 此时模板必须只有一个参数
         else:   
+            # 对应模板字符串中没有参数的情况：temlpate = ModelPrompt.from_template("......")
+            # 此时 prompt_input 就是唯一的参数
+            print("模板字符串中没有参数")
             if self.template.meta.param == {}:
                 system_message.content = self.template.system
-                user_message: Message = MessageRole.user(content=prompt_input)
+                
+                if not isinstance(prompt_input, str):
+                    raise ValueError("该情况暂不支持非字符串的输入")
+                if is_url_or_base64(prompt_input):
+                    user_message: Message = MessageRole.user(content="", images=prompt_input)
+                else:
+                    user_message: Message = MessageRole.user(content=prompt_input)
+                
                 return MessageBus([system_message, user_message])
             
             if len(self.template.meta.param) == 1:
