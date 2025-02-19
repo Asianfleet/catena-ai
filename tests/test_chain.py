@@ -1,7 +1,7 @@
 import unittest
 
 from catena_ai.llmchain.memory import InfMemory
-from catena_ai.llmchain.model.oai import OpenAIOrigin
+from catena_ai.llmchain.client.oai import OpenAIOrigin
 from catena_ai.llmchain.prompt import ModelPrompt
 from catena_ai.agents.tools import tool
 
