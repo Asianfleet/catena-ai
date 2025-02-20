@@ -111,7 +111,7 @@ class ModelPrompt(Node):
         from pathlib import Path
         if "{" in label:
             return None
-        if Path(label).exists():
+        if os.path.exists(label):
             config_path = label
         else:
             labels = label.split(".")    
