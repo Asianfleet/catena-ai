@@ -8,7 +8,9 @@ from typing import (
     Any,
     Dict,
     Union, 
-    List
+    List,
+    Optional,
+    TYPE_CHECKING
 )
 
 from ...catena_core.callback.node_callback import NodeCallback
@@ -17,6 +19,10 @@ from ...catena_core.node.base import Node, NodeCompletion
 from ...catena_core.alias.builtin import NodeType
 from ...catena_core.utils.format_json import delete_json_format
 from ...catenasmith.visualize.cli_visualize import cli_visualize
+
+if TYPE_CHECKING:
+    from ...llmchain.response import ModelResponse
+    from ...llmchain.message import Message
 
 class BaseOutputChecker(ABC):
     """ 输出检查器基类 """
@@ -53,12 +59,26 @@ class JsonOutputChecker(BaseOutputChecker):
         Returns:
             如果输入符合指定的模式，返回解析后的字典；否则返回 -1。 
         """
+        
+        def extract_json_content(text):
+            # 尝试匹配 ```json 和 ``` 之间的内容
+            pattern = r"```json\s*([\s\S]*?)\s*```"
+            match = re.search(pattern, text)
+            
+            if match:
+                # 如果匹配到了代码块，返回代码块内的内容
+                return match.group(1).strip()
+            else:
+                # 如果没有匹配到代码块，假设整个字符串就是 JSON
+                return text.strip()
+        
         try:
-            parser_input = json.loads(parser_input)
+            input_no_code_block = extract_json_content(parser_input)
+            input_dict = json.loads(input_no_code_block)
             if not kwargs.get("schema"):
-                return parser_input
-            validate(instance=parser_input, schema=kwargs.get("schema"))
-            return parser_input
+                return input_dict
+            validate(instance=input_dict, schema=kwargs.get("schema"))
+            return input_dict
         except Exception:
             traceback_str = traceback.format_exc()  # 获取详细的错误信息
             print(traceback_str)
@@ -95,7 +115,8 @@ class CodeBlockOutputChecker(BaseOutputChecker):
 class LLMOutputParser(Node):
     """ 大模型输出解析模块 """
 
-    node_id = Field(default=NodeType.PARSER, init=False)
+    node_id: NodeType = Field(default=NodeType.PARSER, init=False)
+    data_type: Optional[str] = None
     
     def check(self, input: str, type: str = None, **kwargs):
         """
@@ -109,8 +130,12 @@ class LLMOutputParser(Node):
 
         content = input 
         if not type:
-            return content
-        elif type == "text":
+            if not self.data_type:
+                return content
+            
+        type = self.data_type
+        
+        if type == "text":
             return StrOutputChecker()(content, kwargs.get("pattern"))
         elif type == "json_object":
             return JsonOutputChecker()(content, schema=kwargs.get("schema"))
@@ -156,14 +181,17 @@ class LLMOutputParser(Node):
 
         return parsed
     
-    @cli_visualize
+    # @cli_visualize
     def operate(self, input: NodeCompletion) -> NodeCompletion:
+        response: 'ModelResponse' = input.main_data
+        assistant_message: 'Message' = response
 
-        
         check_result = self.check(
-            input.main_data,
+            assistant_message.content,
             **input.extra_data.unwrap
         )
+        
+        print("[LLMOutputParser] check_result: ", check_result)
         
         if check_result == -1:
             cb = NodeCallback(
@@ -174,6 +202,7 @@ class LLMOutputParser(Node):
         else:
             cb = NodeCallback()  
         return NodeCompletion(
+            type=self.node_id,
             main_data=check_result,
             extra_data=input.extra_data,
             callback=cb
